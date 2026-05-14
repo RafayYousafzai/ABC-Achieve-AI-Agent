@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  Card,
-  Input,
-  Avatar,
-  Spinner,
-  Button,
-  ScrollShadow,
-  Surface,
-} from "@heroui/react";
+import React, { useRef, useState, useEffect } from "react";
+import { X, Paperclip, ArrowUp } from "lucide-react";
 import { useChatWidget } from "../hooks/useChatWidget";
 
 export default function ChatWidget() {
@@ -25,128 +18,208 @@ export default function ChatWidget() {
     handleSubmit,
   } = useChatWidget();
 
+  const [image, setImage] = useState(null);
+  const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  const avatarSrc = "https://i.pravatar.cc/150?u=jennifer";
+  const quickPrompts = [
+    "What is ABA Therapy?",
+    "How to get started?",
+    "Check availability",
+  ];
+
+  // Auto-scroll
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isProcessing]);
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  };
+
+  const onSend = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!input.trim() && !image) return;
+    handleSubmit(e);
+    setImage(null);
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+  };
+
   if (!sessionId) return null;
 
+  const isSendDisabled = !isReady || isProcessing || (!input.trim() && !image);
+
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      {/* The Chat Window */}
+    <div className="fixed bottom-6 right-6 z-50 font-sans">
       {isOpen && (
-        <Card className="w-80 sm:w-96 h-[30rem]   flex flex-col overflow-hidden ">
+        <div className="w-[340px] sm:w-[360px] h-[480px] flex flex-col overflow-hidden shadow-2xl rounded-2xl bg-white border border-gray-100">
           {/* Header */}
-          <Card.Header className="bg-blue-600">
-            <div className="flex items-center gap-3">
-              <Avatar size="sm" className="bg-white">
-                <Avatar.Fallback className="text-[#00A3C4] font-bold">
-                  E
-                </Avatar.Fallback>
-              </Avatar>
-              <Card.Title className="font-semibold text-white text-base">
-                Ellie
-              </Card.Title>
+          <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-gradient-to-r from-[#1e3a8a] to-[#25418b] text-white z-10">
+            <div className="flex items-center gap-3 ml-1">
+              <div className="flex flex-col">
+                <h2 className="font-semibold text-[15px] leading-tight">
+                  Jennifer
+                </h2>
+                <p className="text-[11px] text-blue-200 opacity-90 font-medium">
+                  Online
+                </p>
+              </div>
             </div>
-            <Button
+            <button
               onClick={() => setIsOpen(false)}
-              className="bg-transparent text-white hover:bg-white/20 min-w-0 w-8 h-8 p-0 flex items-center justify-center rounded-full transition-colors"
-              aria-label="Close chat"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M1 1L13 13M1 13L13 1" />
-              </svg>
-            </Button>
-          </Card.Header>
+              <X size={18} />
+            </button>
+          </header>
 
           {/* Messages Area */}
-          <Card.Content className="flex-1 p-0 m-0 border-none overflow-hidden">
-            <Surface className="h-full bg-surface-secondary flex flex-col">
-              <ScrollShadow className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-                {messages.map((m) => (
+          <div className="flex-1 overflow-y-auto bg-white p-4">
+            <div className="flex flex-col gap-4">
+              {/* Profile Intro (Shows at top) */}
+              <div className="flex flex-col items-center mb-2">
+                <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#25418b] to-[#1e3a8a]">
+                  <img
+                    src={avatarSrc}
+                    alt="Assistant"
+                    className="w-full h-full rounded-full object-cover border-2 border-white"
+                  />
+                </div>
+                <span className="text-[#25418b] text-[13px] font-semibold mt-2">
+                  Jennifer
+                </span>
+              </div>
+
+              {/* Message List */}
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start gap-2"}`}
+                >
+                  {msg.role !== "user" && (
+                    <div className="relative shrink-0 mt-auto">
+                      <img
+                        src={avatarSrc}
+                        className="w-8 h-8 rounded-full border border-gray-200"
+                        alt="Bot"
+                      />
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full"></span>
+                    </div>
+                  )}
                   <div
-                    key={m.id}
-                    className={`max-w-[80%] p-3 text-sm rounded-2xl ${
-                      m.role === "user"
-                        ? "bg-[#00A3C4] text-white self-end rounded-br-sm shadow-md"
-                        : "bg-surface border border-border text-foreground self-start rounded-bl-sm shadow-sm"
+                    className={`p-3 text-[14px] leading-relaxed max-w-[85%] ${
+                      msg.role === "user"
+                        ? "bg-[#25418b] text-white rounded-2xl rounded-br-sm"
+                        : "bg-gray-100 text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100"
                     }`}
                   >
-                    {m.parts?.map((part, index) =>
-                      part.type === "text" ? (
-                        <span key={index}>{part.text}</span>
-                      ) : null,
+                    {msg.parts ? (
+                      msg.parts.map((p, i) =>
+                        p.type === "text" ? <p key={i}>{p.text}</p> : null,
+                      )
+                    ) : (
+                      <p>{msg.content}</p>
                     )}
                   </div>
-                ))}
+                </div>
+              ))}
 
-                {isProcessing && (
-                  <div className="flex items-center gap-2 text-xs text-muted self-start py-2">
-                    <Spinner size="sm" color="current" />
-                    <span>Ellie is typing...</span>
+              {/* Quick Prompts - Only show when there's only the greeting message */}
+              {messages.length === 1 && (
+                <div className="flex flex-wrap gap-2 ml-10 mt-[-8px]">
+                  {quickPrompts.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => setInput(prompt)}
+                      className="text-[12px] bg-white border border-[#25418b] text-[#25418b] py-1 px-3 rounded-full hover:bg-[#25418b] hover:text-white transition-colors"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {isProcessing && (
+                <div className="flex gap-2 items-center ml-10">
+                  <div className="flex gap-1">
+                    <span
+                      className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    ></span>
+                    <span
+                      className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    ></span>
+                    <span
+                      className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    ></span>
                   </div>
-                )}
+                </div>
+              )}
 
-                {error && (
-                  <div className="p-3 bg-danger-50 text-danger text-xs text-center border border-danger-200 rounded-lg mt-auto">
-                    Connection Error: {error.message}
-                  </div>
-                )}
-              </ScrollShadow>
-            </Surface>
-          </Card.Content>
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
 
-          {/* Input Area */}
-          <Card.Footer className="p-3 bg-surface border-t border-border rounded-none m-0">
+          {/* Footer */}
+          <footer className="p-3 bg-white border-t border-gray-100">
             <form
-              onSubmit={handleSubmit}
-              className="flex gap-2 w-full items-center"
+              onSubmit={onSend}
+              className="flex items-end gap-1 bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-1.5 focus-within:bg-white focus-within:border-[#25418b]/40 transition-all"
             >
-              <Input
-                className="flex-1"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                disabled={!isReady}
-                variant="secondary" // Low-emphasis variant suitable for Surface
-                fullWidth
-              />
-              <Button
-                type="submit"
-                className="bg-[#e94e77] text-white rounded-full w-10 h-10 min-w-[40px] p-0 flex items-center justify-center hover:bg-[#d43d65] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                disabled={!isReady || !input.trim()}
-                aria-label="Send message"
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-gray-400 hover:text-[#25418b]"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="12" y1="19" x2="12" y2="5"></line>
-                  <polyline points="5 12 12 5 19 12"></polyline>
-                </svg>
-              </Button>
+                <Paperclip size={18} />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                hidden
+                accept="image/*"
+                onChange={(e) =>
+                  setImage(URL.createObjectURL(e.target.files[0]))
+                }
+              />
+
+              <textarea
+                ref={textareaRef}
+                rows="1"
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && onSend(e)}
+                placeholder="Message..."
+                className="flex-1 max-h-[100px] bg-transparent border-none outline-none resize-none py-2 text-[14px] text-gray-700"
+              />
+
+              <button
+                type="submit"
+                disabled={isSendDisabled}
+                className={`p-2 rounded-lg transition-all ${isSendDisabled ? "text-gray-300" : "text-[#25418b] hover:scale-110"}`}
+              >
+                <ArrowUp size={20} strokeWidth={3} />
+              </button>
             </form>
-          </Card.Footer>
-        </Card>
+          </footer>
+        </div>
       )}
 
-      {/* The Floating Bubble Button */}
+      {/* Bubble */}
       {!isOpen && (
-        <Button
+        <button
           onClick={() => setIsOpen(true)}
-          className="bg-[#00A3C4] w-14 h-14 min-w-[56px] rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform"
-          aria-label="Open chat"
+          className="bg-[#25418b] w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform"
         >
           <svg
             className="w-6 h-6"
@@ -157,11 +230,11 @@ export default function ChatWidget() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth="2"
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
             />
           </svg>
-        </Button>
+        </button>
       )}
     </div>
   );
