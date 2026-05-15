@@ -1,6 +1,6 @@
-import React from "react";
-import { ArrowUp, Image, Paperclip, X } from "lucide-react";
-import { Button, Input, Surface } from "@heroui/react";
+import React, { memo, useCallback } from "react";
+import { ArrowUp, Image as ImageIcon, X } from "lucide-react";
+import { Button, Input, Spinner, Surface } from "@heroui/react";
 
 interface ChatComposerProps {
   image: string | null;
@@ -16,7 +16,8 @@ interface ChatComposerProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
-export function ChatComposer({
+// Wrapped in memo to prevent unnecessary re-renders when messages stream in the parent
+export const ChatComposer = memo(function ChatComposer({
   image,
   input,
   isLoading,
@@ -31,11 +32,16 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const isSendDisabled = isLoading || (!input.trim() && !image);
 
+  // Fix: Reset the actual file input element so the user can re-upload the same file if they clear it
+  const handleImageClear = useCallback(() => {
+    onImageClear();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, [onImageClear, fileInputRef]);
+
   return (
-    <Surface
-      className="px-4 pb-4 pt-3 shrink-0 mt-auto rounded-none"
-      variant="default"
-    >
+    <Surface className="px-4 pb-4 shrink-0 rounded-none" variant="default">
       {/* Image Preview Area */}
       {image && (
         <div className="relative inline-block mb-3 group">
@@ -48,8 +54,9 @@ export function ChatComposer({
             isIconOnly
             size="sm"
             variant="danger"
-            className="absolute -top-2 -right-2"
-            onClick={onImageClear}
+            className="absolute -top-2 -right-2 z-10"
+            onClick={handleImageClear}
+            aria-label="Clear image"
           >
             <X size={14} />
           </Button>
@@ -64,8 +71,10 @@ export function ChatComposer({
           variant="tertiary"
           size="md"
           onClick={() => fileInputRef.current?.click()}
+          aria-label="Upload image"
         >
-          <Image size={20} />
+          {/* Renamed import to ImageIcon to prevent IDE confusion with native DOM Image */}
+          <ImageIcon size={20} />
         </Button>
 
         <input
@@ -74,6 +83,8 @@ export function ChatComposer({
           onChange={onImageUpload}
           accept="image/*"
           className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
         />
 
         {/* Single-line input */}
@@ -83,7 +94,7 @@ export function ChatComposer({
           onChange={(e) => onInputChange(e.target.value, e.target)}
           onKeyDown={onInputKeyDown}
           placeholder={placeholder}
-          className="flex-1"
+          className="flex-1 rounded-full"
           variant="secondary"
         />
 
@@ -94,10 +105,15 @@ export function ChatComposer({
           onClick={onSend}
           isDisabled={isSendDisabled}
           size="md"
+          aria-label="Send message"
         >
-          <ArrowUp size={18} strokeWidth={3} />
+          {isLoading ? (
+            <Spinner size="md" color="current" />
+          ) : (
+            <ArrowUp size={18} strokeWidth={3} />
+          )}
         </Button>
       </div>
     </Surface>
   );
-}
+});

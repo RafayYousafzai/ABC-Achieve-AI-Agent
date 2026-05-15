@@ -1,20 +1,11 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import { Paperclip, ArrowUp, Image, Cross, CrossIcon, X } from "lucide-react";
-import {
-  Card,
-  Avatar,
-  Button,
-  TextArea,
-  ScrollShadow,
-  Text,
-} from "@heroui/react";
+import { useRef, useState, useEffect } from "react";
+import { Card, Button, ScrollShadow } from "@heroui/react";
 import { useChatWidget } from "../hooks/useChatWidget";
 import { ChatHeader } from "./chat/ChatHeader";
 import { ChatMessages } from "./chat/ChatMessages";
 import { ChatComposer } from "./chat/ChatComposer";
-import { Surface } from "@heroui/react";
 
 export default function ChatWidget() {
   const {

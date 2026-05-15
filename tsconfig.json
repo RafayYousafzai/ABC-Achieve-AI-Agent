@@ -30,7 +30,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "app/api/chat/route.js",
-    "components/ChatWidget.jsx"
+    "components/ChatWidget.tsx"
   ],
   "exclude": ["node_modules"]
 }

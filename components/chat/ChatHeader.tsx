@@ -1,12 +1,14 @@
 import { X } from "lucide-react";
 import { Button, Avatar, Text } from "@heroui/react";
+import Image from "next/image";
 
 interface ChatHeaderProps {
   title: string;
   subtitle: string;
   avatarSrc: string;
-  onClear: () => void;
+  onClear?: () => void;
   onMinimize: () => void;
+  isMessageEmpty: boolean;
 }
 
 export function ChatHeader({
@@ -14,20 +16,20 @@ export function ChatHeader({
   subtitle,
   avatarSrc,
   onMinimize,
+  isMessageEmpty,
 }: ChatHeaderProps) {
   return (
-    <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-gradient-to-r from-[#1e3a8a] to-[#25418b] text-white shadow-md rounded-b-2xl z-10 border-b border-white/10">
+    <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-[#1e3a8a] text-white rounded-3xl">
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Avatar className="w-10 h-10 rounded-full border-2 border-white/20">
-            <Avatar.Image
-              alt="John Doe"
-              src="https://img.heroui.chat/image/avatar?w=400&h=400&u=3"
-            />
-            <Avatar.Fallback>JD</Avatar.Fallback>
-          </Avatar>
-
-          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1e3a8a] rounded-full"></span>
+          <Image
+            src={avatarSrc}
+            alt={title}
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
+          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1e3a8a] rounded-full" />
         </div>
 
         <div className="flex flex-col ml-2">

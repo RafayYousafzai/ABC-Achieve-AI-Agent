@@ -3,5 +3,6 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   image?: string;
-  timestamp: string;
+  timestamp?: string;
+  parts?: Array<{ type: string; text: string }>;
 }
