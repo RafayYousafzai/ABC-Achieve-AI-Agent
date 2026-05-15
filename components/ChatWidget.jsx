@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { X, Paperclip, ArrowUp } from "lucide-react";
+import { Paperclip, ArrowUp } from "lucide-react";
+import {
+  Card,
+  Avatar,
+  Button,
+  TextArea,
+  ScrollShadow,
+  Text,
+} from "@heroui/react";
 import { useChatWidget } from "../hooks/useChatWidget";
 
 export default function ChatWidget() {
@@ -37,20 +45,11 @@ export default function ChatWidget() {
     }
   }, [messages, isProcessing]);
 
-  const handleInputChange = (e) => {
-    setInput(e.target.value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-    }
-  };
-
   const onSend = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!input.trim() && !image) return;
     handleSubmit(e);
     setImage(null);
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
   if (!sessionId) return null;
@@ -58,168 +57,198 @@ export default function ChatWidget() {
   const isSendDisabled = !isReady || isProcessing || (!input.trim() && !image);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-6 right-6 z-50">
       {isOpen && (
-        <div className="w-[340px] sm:w-[360px] h-[480px] flex flex-col overflow-hidden shadow-2xl rounded-2xl bg-white border border-gray-100">
+        <Card className="w-[340px] sm:w-[360px] h-[480px] p-0 rounded-2xl">
           {/* Header */}
-          <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-gradient-to-r from-[#1e3a8a] to-[#25418b] text-white z-10">
-            <div className="flex items-center gap-3 ml-1">
-              <div className="flex flex-col">
-                <h2 className="font-semibold text-[15px] leading-tight">
-                  Jennifer
-                </h2>
-                <p className="text-[11px] text-blue-200 opacity-90 font-medium">
-                  Online
-                </p>
-              </div>
+          <div className="flex justify-between items-center bg-blue-700 text-white px-4 py-3">
+            <div className="flex flex-col gap-0.5">
+              <Text className="text-white font-semibold text-base">
+                Jennifer
+              </Text>
+              <p className="text-xs text-blue-100">Online</p>
             </div>
-            <button
+            <Button
+              isIconOnly
+              className="bg-transparent hover:bg-white/10 text-white"
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              size="sm"
             >
-              <X size={18} />
-            </button>
-          </header>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </Button>
+          </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto bg-white p-4">
+          {/* Messages Area with ScrollShadow */}
+          <ScrollShadow
+            className="flex-1 px-4 scrollbar-hide"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#ccc transparent",
+            }}
+          >
             <div className="flex flex-col gap-4">
-              {/* Profile Intro (Shows at top) */}
+              {/* Profile Intro */}
               <div className="flex flex-col items-center mb-2">
-                <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#25418b] to-[#1e3a8a]">
-                  <img
-                    src={avatarSrc}
-                    alt="Assistant"
-                    className="w-full h-full rounded-full object-cover border-2 border-white"
-                  />
-                </div>
-                <span className="text-[#25418b] text-[13px] font-semibold mt-2">
+                <Avatar
+                  src={avatarSrc}
+                  size="lg"
+                  name="Jennifer"
+                  color="primary"
+                />
+                <p className="text-sm font-semibold text-primary mt-2">
                   Jennifer
-                </span>
+                </p>
               </div>
 
               {/* Message List */}
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start gap-2"}`}
+                  className={`flex w-full gap-2 ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
                 >
                   {msg.role !== "user" && (
-                    <div className="relative shrink-0 mt-auto">
-                      <img
-                        src={avatarSrc}
-                        className="w-8 h-8 rounded-full border border-gray-200"
-                        alt="Bot"
-                      />
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#22c55e] border-2 border-white rounded-full"></span>
-                    </div>
+                    <Avatar
+                      src={avatarSrc}
+                      size="sm"
+                      name="Bot"
+                      className="flex-shrink-0 mt-1"
+                    />
                   )}
                   <div
-                    className={`p-3 text-[14px] leading-relaxed max-w-[85%] ${
+                    className={`max-w-[85%] p-3 rounded-2xl ${
                       msg.role === "user"
-                        ? "bg-[#25418b] text-white rounded-2xl rounded-br-sm"
-                        : "bg-gray-100 text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100"
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-gray-200 text-gray-900 rounded-bl-none"
                     }`}
                   >
-                    {msg.parts ? (
-                      msg.parts.map((p, i) =>
-                        p.type === "text" ? <p key={i}>{p.text}</p> : null,
-                      )
-                    ) : (
-                      <p>{msg.content}</p>
-                    )}
+                    <p className="text-sm leading-relaxed break-words">
+                      {msg.parts
+                        ? msg.parts
+                            .filter((p) => p.type === "text")
+                            .map((p) => p.text)
+                            .join("")
+                        : msg.content}
+                    </p>
                   </div>
                 </div>
               ))}
 
-              {/* Quick Prompts - Only show when there's only the greeting message */}
-              {messages.length === 1 && (
-                <div className="flex flex-wrap gap-2 ml-10 mt-[-8px]">
-                  {quickPrompts.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => setInput(prompt)}
-                      className="text-[12px] bg-white border border-[#25418b] text-[#25418b] py-1 px-3 rounded-full hover:bg-[#25418b] hover:text-white transition-colors"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              )}
-
+              {/* Loading Indicator */}
               {isProcessing && (
-                <div className="flex gap-2 items-center ml-10">
-                  <div className="flex gap-1">
-                    <span
-                      className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0ms" }}
-                    ></span>
-                    <span
-                      className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "150ms" }}
-                    ></span>
-                    <span
-                      className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "300ms" }}
-                    ></span>
-                  </div>
+                <div className="flex gap-1 ml-10">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></span>
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></span>
                 </div>
               )}
 
               <div ref={messagesEndRef} />
             </div>
-          </div>
+          </ScrollShadow>
 
-          {/* Footer */}
-          <footer className="p-3 bg-white border-t border-gray-100">
-            <form
-              onSubmit={onSend}
-              className="flex items-end gap-1 bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-1.5 focus-within:bg-white focus-within:border-[#25418b]/40 transition-all"
-            >
-              <button
-                type="button"
+          {/* Footer - Message Input */}
+          <Card.Footer className="px-4 pt-3 pb-3 flex flex-col gap-2">
+            {/* Quick Prompts */}
+            {messages.length === 1 && (
+              <div className="flex flex-wrap gap-2">
+                {quickPrompts.map((prompt) => (
+                  <Button
+                    key={prompt}
+                    size="sm"
+                    variant="outline"
+                    color="primary"
+                    onClick={() => setInput(prompt)}
+                    className="text-xs"
+                  >
+                    {prompt}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <form onSubmit={onSend} className="flex items-end gap-2 w-full">
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-gray-400 hover:text-[#25418b]"
+                className="text-gray-500"
               >
                 <Paperclip size={18} />
-              </button>
+              </Button>
               <input
                 type="file"
                 ref={fileInputRef}
                 hidden
                 accept="image/*"
-                onChange={(e) =>
-                  setImage(URL.createObjectURL(e.target.files[0]))
-                }
+                onChange={(e) => {
+                  if (e.target.files[0]) {
+                    setImage(URL.createObjectURL(e.target.files[0]));
+                  }
+                }}
               />
 
-              <textarea
+              <TextArea
                 ref={textareaRef}
-                rows="1"
                 value={input}
-                onChange={handleInputChange}
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && onSend(e)}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    onSend(e);
+                  }
+                }}
                 placeholder="Message..."
-                className="flex-1 max-h-[100px] bg-transparent border-none outline-none resize-none py-2 text-[14px] text-gray-700"
+                minRows={1}
+                maxRows={3}
+                variant="secondary"
+                className="flex-1   scrollbar-hide"
+                style={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#ccc transparent",
+                }}
               />
 
-              <button
+              <Button
+                isIconOnly
                 type="submit"
                 disabled={isSendDisabled}
-                className={`p-2 rounded-lg transition-all ${isSendDisabled ? "text-gray-300" : "text-[#25418b] hover:scale-110"}`}
+                color="primary"
+                size="sm"
               >
-                <ArrowUp size={20} strokeWidth={3} />
-              </button>
+                <ArrowUp size={18} strokeWidth={2.5} />
+              </Button>
             </form>
-          </footer>
-        </div>
+          </Card.Footer>
+        </Card>
       )}
 
-      {/* Bubble */}
+      {/* Bubble Button */}
       {!isOpen && (
-        <button
+        <Button
+          isIconOnly
+          className="w-14 h-14 bg-blue-700 hover:bg-blue-800"
           onClick={() => setIsOpen(true)}
-          className="bg-[#25418b] w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform"
+          size="lg"
         >
           <svg
             className="w-6 h-6"
@@ -234,7 +263,7 @@ export default function ChatWidget() {
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
             />
           </svg>
-        </button>
+        </Button>
       )}
     </div>
   );
