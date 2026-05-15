@@ -29,7 +29,9 @@ function getTextContent(msg: Message): string {
 function getFileParts(msg: Message) {
   return (
     msg.parts?.filter(
-      (part): part is {
+      (
+        part,
+      ): part is {
         type: "file";
         mediaType: string;
         filename?: string;
