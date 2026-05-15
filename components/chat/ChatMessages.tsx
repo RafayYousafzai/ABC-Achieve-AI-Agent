@@ -1,6 +1,9 @@
 import type { Message } from "./types";
 import { Avatar, Button, Surface } from "@heroui/react";
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { TextShimmer } from "../motion-primitives/text-shimmer";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface ChatMessagesProps {
   messages: Message[];
@@ -11,7 +14,8 @@ interface ChatMessagesProps {
   avatarSrc: string;
 }
 
-// Extracts visible text from a message's parts
+// ─── Pure helpers ─────────────────────────────────────────────────────────────
+
 function getTextContent(msg: Message): string {
   if (msg.parts) {
     return msg.parts
@@ -22,7 +26,6 @@ function getTextContent(msg: Message): string {
   return (msg as any).content || "";
 }
 
-// Returns true if any assistant message has an active tool part
 function hasActiveToolCall(messages: Message[]): boolean {
   return messages.some(
     (m) =>
@@ -31,19 +34,52 @@ function hasActiveToolCall(messages: Message[]): boolean {
   );
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
 function ThinkingIndicator({ isToolActive }: { isToolActive: boolean }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 min-h-[20px]">
       {isToolActive ? (
-        <>
-          <span className="text-[13px] text-gray-500">Thinking hard...</span>
-        </>
+        <span className="text-[13px] text-gray-500">
+          <TextShimmer>Thinking hard...</TextShimmer>
+        </span>
       ) : (
         <div className="loader" />
       )}
     </div>
   );
 }
+
+function ScrollToBottomButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="
+        absolute bottom-4 right-4 z-10
+        w-8 h-8 rounded-full
+        bg-white border border-gray-200
+        shadow-md flex items-center justify-center
+        text-gray-500 hover:text-gray-800
+        hover:shadow-lg hover:scale-105
+        transition-all duration-200 ease-out
+        animate-in fade-in slide-in-from-bottom-2
+      "
+      aria-label="Scroll to bottom"
+    >
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2.5}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function ChatMessages({
   messages,
@@ -55,15 +91,47 @@ export function ChatMessages({
 }: ChatMessagesProps) {
   const isMessageEmpty = messages.length === 0;
 
-  const lastAssistantMsg = [...messages]
-    .reverse()
-    .find((m) => m.role === "assistant");
+  // Scroll state
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const isAtBottomRef = useRef(true);
+
+  // Derived state
+  const lastAssistantMsg = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "assistant"),
+    [messages],
+  );
   const lastAssistantHasText = lastAssistantMsg
     ? getTextContent(lastAssistantMsg).trim() !== ""
     : false;
   const showLoadingBubble = isLoading && !lastAssistantHasText;
   const isToolActive = hasActiveToolCall(messages);
 
+  // Scroll to bottom instantly
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior, block: "end" });
+  }, []);
+
+  // Track whether user is at bottom
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const atBottom = distanceFromBottom < 60;
+    isAtBottomRef.current = atBottom;
+    setShowScrollButton(!atBottom);
+  }, []);
+
+  // Auto-scroll when messages change or loading state changes
+  useEffect(() => {
+    if (isAtBottomRef.current) {
+      // Instant scroll during streaming to avoid lag
+      scrollToBottom(isLoading ? "instant" : "smooth");
+    }
+  }, [messages, isLoading, showLoadingBubble, scrollToBottom]);
+
+  // Memoized avatar
   const AiAvatar = useMemo(
     () => (
       <div className="relative shrink-0">
@@ -77,6 +145,7 @@ export function ChatMessages({
     [avatarSrc],
   );
 
+  // Memoized welcome message
   const WelcomeMessage = useMemo(
     () => (
       <div className="flex items-end gap-2 w-full mt-2">
@@ -96,10 +165,10 @@ export function ChatMessages({
 
   return (
     <div
-      className={`flex flex-col h-full ${isEmptyConversationState ? "pt-3 pb-2" : "py-5"}`}
+      className={`flex flex-col h-full ${isEmptyConversationState ? "pt-3 pb-2" : "py-0"}`}
     >
       {isMessageEmpty ? (
-        // Empty state — welcome message + quick prompts
+        // ── Empty state ──────────────────────────────────────────────────────
         <div className="flex flex-col flex-1 pl-2 pr-4 pb-1">
           {WelcomeMessage}
           <div className="flex flex-row flex-wrap justify-start gap-2 pt-3 pl-12 mt-auto">
@@ -115,83 +184,100 @@ export function ChatMessages({
           </div>
         </div>
       ) : (
-        // Conversation view
-        <div className="flex flex-col gap-4 pl-2 pr-4 pb-2">
-          {/* Agent profile header */}
-          <div className="flex flex-col items-center">
-            <Avatar className="w-20 h-20 rounded-full">
-              <Avatar.Image alt="Agent" src={avatarSrc} />
-              <Avatar.Fallback>JD</Avatar.Fallback>
-            </Avatar>
-            <span className="text-black text-[13px] font-semibold mt-1">
-              Jennifer
-            </span>
+        // ── Conversation view ────────────────────────────────────────────────
+        <div className="relative flex flex-col h-full">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex flex-col gap-4 pl-2 pr-4 pb-2 overflow-y-auto flex-1 scroll-smooth"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {/* Agent profile header */}
+            <div className="flex flex-col items-center">
+              <Avatar className="w-20 h-20 rounded-full">
+                <Avatar.Image alt="Agent" src={avatarSrc} />
+                <Avatar.Fallback>JD</Avatar.Fallback>
+              </Avatar>
+              <span className="text-black text-[13px] font-semibold mt-1">
+                Jennifer
+              </span>
+            </div>
+
+            {/* Disclaimer */}
+            <Surface
+              className="flex min-w-[320px] flex-col gap-3 rounded-3xl border p-4 text-gray-400 text-[12px] leading-relaxed m-4"
+              variant="transparent"
+            >
+              By using the chat feature, you agree to our terms and acknowledge
+              our privacy policy.
+              <br />
+              Your chat may be recorded. {"\u24D8"}
+            </Surface>
+
+            {WelcomeMessage}
+
+            {/* Message list */}
+            {messages.map((msg) => {
+              const isAssistant = msg.role === "assistant";
+              const textContent = getTextContent(msg);
+
+              // Skip tool-only assistant steps
+              if (isAssistant && !textContent.trim()) return null;
+
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex w-full ${!isAssistant ? "justify-end" : "justify-start gap-2"}`}
+                >
+                  {isAssistant && <div className="mt-auto">{AiAvatar}</div>}
+
+                  <div
+                    className={`flex flex-col gap-2 max-w-[80%] ${
+                      !isAssistant ? "items-end ml-auto" : "items-start"
+                    }`}
+                  >
+                    <Surface
+                      className={`p-3.5 text-[15px] leading-relaxed transition-opacity duration-200 ${
+                        !isAssistant
+                          ? "bg-[#24408B] text-white rounded-3xl"
+                          : "bg-slate-100 text-gray-800 rounded-3xl"
+                      }`}
+                      variant="default"
+                    >
+                      {(msg as any).image && (
+                        <img
+                          src={(msg as any).image}
+                          alt="Attachment"
+                          className="max-w-full rounded-2xl mb-2"
+                        />
+                      )}
+                      <p className="whitespace-pre-wrap">{textContent}</p>
+                    </Surface>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Loading / thinking bubble */}
+            {showLoadingBubble && (
+              <div className="flex gap-2 w-full mt-2">
+                <div className="mt-auto">{AiAvatar}</div>
+                <Surface
+                  className="px-4 py-3 bg-slate-100 rounded-3xl"
+                  variant="default"
+                >
+                  <ThinkingIndicator isToolActive={isToolActive} />
+                </Surface>
+              </div>
+            )}
+
+            {/* Scroll anchor */}
+            <div ref={bottomRef} className="h-1 shrink-0" />
           </div>
 
-          {/* Disclaimer */}
-          <Surface
-            className="flex min-w-[320px] flex-col gap-3 rounded-3xl border p-4 text-gray-400 text-[12px] leading-relaxed m-4"
-            variant="transparent"
-          >
-            By using the chat feature, you agree to our terms and acknowledge
-            our privacy policy.
-            <br />
-            Your chat may be recorded. {"\u24D8"}
-          </Surface>
-
-          {WelcomeMessage}
-
-          {/* Message list */}
-          {messages.map((msg) => {
-            const isAssistant = msg.role === "assistant";
-            const textContent = getTextContent(msg);
-
-            // Skip assistant messages with no visible text (tool-only steps)
-            if (isAssistant && !textContent.trim()) return null;
-
-            return (
-              <div
-                key={msg.id}
-                className={`flex w-full ${!isAssistant ? "justify-end" : "justify-start gap-2"}`}
-              >
-                {isAssistant && <div className="mt-auto">{AiAvatar}</div>}
-
-                <div
-                  className={`flex flex-col gap-2 max-w-[80%] ${!isAssistant ? "items-end ml-auto" : "items-start"}`}
-                >
-                  <Surface
-                    className={`p-3.5 text-[15px] leading-relaxed ${
-                      !isAssistant
-                        ? "bg-[#24408B] text-white rounded-3xl"
-                        : "bg-slate-100 text-gray-800 rounded-3xl"
-                    }`}
-                    variant="default"
-                  >
-                    {(msg as any).image && (
-                      <img
-                        src={(msg as any).image}
-                        alt="Attachment"
-                        className="max-w-full rounded-2xl mb-2"
-                      />
-                    )}
-                    <p className="whitespace-pre-wrap">{textContent}</p>
-                  </Surface>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Loading / thinking bubble */}
-          {showLoadingBubble && (
-            <div className="flex gap-2 w-full mt-2">
-              <div className="mt-auto">{AiAvatar}</div>
-              <Surface
-                className="px-4 py-3 bg-slate-100 rounded-3xl"
-                variant="default"
-              >
-                <ThinkingIndicator isToolActive={isToolActive} />
-              </Surface>
-            </div>
+          {/* Scroll to bottom button */}
+          {showScrollButton && (
+            <ScrollToBottomButton onClick={() => scrollToBottom("smooth")} />
           )}
         </div>
       )}
