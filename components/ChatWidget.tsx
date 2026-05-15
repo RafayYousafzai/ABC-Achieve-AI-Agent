@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, FormEvent } from "react";
 import { Card, Button, ScrollShadow } from "@heroui/react";
 import { useChatWidget } from "../hooks/useChatWidget";
 import { ChatHeader } from "./chat/ChatHeader";
@@ -21,10 +21,10 @@ export default function ChatWidget() {
     handleSubmit,
   } = useChatWidget();
 
-  const [image, setImage] = useState(null);
-  const fileInputRef = useRef(null);
-  const inputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const [image, setImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const avatarSrc = "https://i.pravatar.cc/150?u=jennifer";
   const quickPrompts = ["Yes", "No", "Espanol"];
@@ -36,7 +36,7 @@ export default function ChatWidget() {
     }
   }, [messages, isProcessing]);
 
-  const onSend = (e) => {
+  const onSend = (e?: FormEvent) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!input.trim() && !image) return;
     handleSubmit(e);
@@ -71,13 +71,12 @@ export default function ChatWidget() {
             }}
           >
             <ChatMessages
-              messages={messages}
+              messages={messages as unknown as never[]}
               isLoading={isProcessing}
               isEmptyConversationState={isMessageEmpty}
               quickPrompts={quickPrompts}
               onQuickPromptSelect={(prompt) => setInput(prompt)}
               avatarSrc={avatarSrc}
-              isMessageEmpty={isMessageEmpty}
             />
 
             <div ref={messagesEndRef} />
@@ -100,7 +99,7 @@ export default function ChatWidget() {
                 onSend(e);
               }
             }}
-            onSend={() => onSend()}
+            onSend={() => onSend(undefined)}
             placeholder="Message..."
             fileInputRef={fileInputRef}
             inputRef={inputRef}
