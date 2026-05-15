@@ -43,3 +43,6 @@ next-env.d.ts
 .vercel
 # heroui-agents-md
 .heroui-docs/
+
+# ignore this folder and its contents
+/lib/agent/knowledge_v2/
