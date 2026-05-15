@@ -11,7 +11,7 @@ export async function POST(req) {
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-3.1-flash-lite"),
       stopWhen: stepCountIs(10),
       system: ELLIE_SYSTEM_PROMPT,
       messages: modelMessages,
