@@ -98,15 +98,19 @@ export function ChatMessages({
   const isAtBottomRef = useRef(true);
 
   // Derived state
-  const lastAssistantMsg = useMemo(
-    () => [...messages].reverse().find((m) => m.role === "assistant"),
-    [messages],
-  );
-  const lastAssistantHasText = lastAssistantMsg
-    ? getTextContent(lastAssistantMsg).trim() !== ""
-    : false;
+  const lastMessage = messages[messages.length - 1];
+  const lastAssistantHasText =
+    lastMessage?.role === "assistant"
+      ? getTextContent(lastMessage).trim() !== ""
+      : false;
   const showLoadingBubble = isLoading && !lastAssistantHasText;
-  const isToolActive = hasActiveToolCall(messages);
+  const currentAssistantMsg =
+    messages[messages.length - 1]?.role === "assistant"
+      ? messages[messages.length - 1]
+      : null;
+  const isToolActive =
+    currentAssistantMsg?.parts?.some((p) => p.type.startsWith("tool-")) ??
+    false;
 
   // Scroll to bottom instantly
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
