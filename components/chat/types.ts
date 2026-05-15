@@ -4,5 +4,13 @@ export interface Message {
   content: string;
   image?: string;
   timestamp?: string;
-  parts?: Array<{ type: string; text: string }>;
+  parts?: Array<
+    | { type: "text"; text: string }
+    | {
+        type: "file";
+        mediaType: string;
+        filename?: string;
+        url: string;
+      }
+  >;
 }

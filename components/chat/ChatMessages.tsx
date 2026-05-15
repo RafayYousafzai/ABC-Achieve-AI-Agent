@@ -26,6 +26,19 @@ function getTextContent(msg: Message): string {
   return (msg as any).content || "";
 }
 
+function getFileParts(msg: Message) {
+  return (
+    msg.parts?.filter(
+      (part): part is {
+        type: "file";
+        mediaType: string;
+        filename?: string;
+        url: string;
+      } => part.type === "file",
+    ) ?? []
+  );
+}
+
 function hasActiveToolCall(messages: Message[]): boolean {
   return messages.some(
     (m) =>
@@ -38,7 +51,7 @@ function hasActiveToolCall(messages: Message[]): boolean {
 
 function ThinkingIndicator({ isToolActive }: { isToolActive: boolean }) {
   return (
-    <div className="flex items-center gap-2 min-h-[20px]">
+    <div className="flex items-center gap-2 min-h-5">
       {isToolActive ? (
         <span className="text-[13px] text-gray-500">
           <TextShimmer>Thinking hard...</TextShimmer>
@@ -224,6 +237,7 @@ export function ChatMessages({
             {messages.map((msg) => {
               const isAssistant = msg.role === "assistant";
               const textContent = getTextContent(msg);
+              const fileParts = getFileParts(msg);
 
               // Skip tool-only assistant steps
               if (isAssistant && !textContent.trim()) return null;
@@ -248,12 +262,15 @@ export function ChatMessages({
                       }`}
                       variant="default"
                     >
-                      {(msg as any).image && (
-                        <img
-                          src={(msg as any).image}
-                          alt="Attachment"
-                          className="max-w-full rounded-2xl mb-2"
-                        />
+                      {fileParts.map((part, index) =>
+                        part.mediaType?.startsWith("image/") ? (
+                          <img
+                            key={`${msg.id}-file-${index}`}
+                            src={part.url}
+                            alt={part.filename || "Attachment"}
+                            className="max-w-full rounded-2xl mb-2"
+                          />
+                        ) : null,
                       )}
                       <p className="whitespace-pre-wrap">{textContent}</p>
                     </Surface>

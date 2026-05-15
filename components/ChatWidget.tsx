@@ -22,6 +22,7 @@ export default function ChatWidget() {
   } = useChatWidget();
 
   const [image, setImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -36,11 +37,30 @@ export default function ChatWidget() {
     }
   }, [messages, isProcessing]);
 
+  useEffect(() => {
+    return () => {
+      if (image) {
+        URL.revokeObjectURL(image);
+      }
+    };
+  }, [image]);
+
+  const clearAttachment = () => {
+    if (image) {
+      URL.revokeObjectURL(image);
+    }
+    setImage(null);
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const onSend = (e?: FormEvent) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!input.trim() && !image) return;
-    handleSubmit(e);
-    setImage(null);
+    handleSubmit(e, selectedFile);
+    clearAttachment();
   };
 
   if (!sessionId) return null;
@@ -95,10 +115,12 @@ export default function ChatWidget() {
             image={image}
             input={input}
             isLoading={isProcessing}
-            onImageClear={() => setImage(null)}
+            onImageClear={clearAttachment}
             onImageUpload={(e) => {
               if (e.target.files && e.target.files[0]) {
-                setImage(URL.createObjectURL(e.target.files[0]));
+                const file = e.target.files[0];
+                setSelectedFile(file);
+                setImage(URL.createObjectURL(file));
               }
             }}
             onInputChange={(value) => setInput(value)}
