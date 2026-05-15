@@ -1,7 +1,7 @@
 // app/api/chat/route.js
-import { openai } from "@ai-sdk/openai";
 import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { createClient } from "@supabase/supabase-js";
+import { google } from "@ai-sdk/google";
 
 // Import your decoupled logic
 import { ELLIE_SYSTEM_PROMPT } from "@/lib/agent/prompt";
@@ -21,7 +21,7 @@ export async function POST(req) {
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
-      model: openai("gpt-4o-mini"),
+      model: google("gemini-2.5-flash"),
       stopWhen: stepCountIs(10), // ← replaces maxSteps
       system: ELLIE_SYSTEM_PROMPT,
       messages: modelMessages,

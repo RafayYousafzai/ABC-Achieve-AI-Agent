@@ -1,17 +1,27 @@
 "use client";
 
-import { TextShimmer } from "@/components/motion-primitives/text-shimmer";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { TextShimmer } from "@/components/motion-primitives/text-shimmer";
 
 export default function Home() {
   const router = useRouter();
 
-  // router.push("/widget");
+  useEffect(() => {
+    // Perform the redirect after the component has safely mounted
+    router.replace("/widget");
+  }, [router]);
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1 className="text-2xl font-bold">
-        <TextShimmer>Redirecting to Chat Widget...</TextShimmer>
-      </h1>
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <h1 className="text-xl font-medium tracking-tight">
+          <TextShimmer duration={1.5}>
+            Initializing Gemini 2.5 Flash...
+          </TextShimmer>
+        </h1>
+        {/* Optional: Add a subtle loading indicator here */}
+      </div>
+    </main>
   );
 }

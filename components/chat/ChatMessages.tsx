@@ -241,9 +241,9 @@ export function ChatMessages({
                     }`}
                   >
                     <Surface
-                      className={`p-3.5 text-[15px] leading-relaxed transition-opacity duration-200 ${
+                      className={`py-3.5 px-5 text-[15px] leading-relaxed transition-opacity duration-200 ${
                         !isAssistant
-                          ? "bg-[#24408B] text-white rounded-3xl"
+                          ? "bg-[#0084F2] text-white rounded-3xl"
                           : "bg-slate-100 text-gray-800 rounded-3xl"
                       }`}
                       variant="default"

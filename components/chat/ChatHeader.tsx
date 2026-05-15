@@ -19,27 +19,17 @@ export function ChatHeader({
   isMessageEmpty,
 }: ChatHeaderProps) {
   return (
-    <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-[#1e3a8a] text-white rounded-3xl">
+    <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-[#0084F2] text-white rounded-full">
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Image
-            src={avatarSrc}
-            alt={title}
-            width={40}
-            height={40}
-            className="rounded-full"
-          />
-          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1e3a8a] rounded-full" />
+          <Image src={"/abc-logo.png"} alt={title} width={40} height={40} />
         </div>
 
         <div className="flex flex-col ml-2">
-          <Text.Heading
-            level={2}
-            className="font-semibold text-[15px] leading-tight text-white"
-          >
+          <Text.Heading className="font-semibold text-[17px] leading-tight text-white">
             {title}
           </Text.Heading>
-          <p className="text-[11px] text-blue-200 opacity-90 font-medium">
+          <p className="text-[11px] text-white opacity-90 font-medium">
             {subtitle}
           </p>
         </div>
