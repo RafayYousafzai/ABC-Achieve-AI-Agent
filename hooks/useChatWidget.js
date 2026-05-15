@@ -25,15 +25,7 @@ export function useChatWidget() {
       api: "/api/chat",
       body: { sessionId },
     }),
-    messages: [
-      {
-        id: "1",
-        role: "assistant",
-        parts: [
-          { type: "text", text: "Hi! 👋 Are you interested in ABA Therapy?" },
-        ],
-      },
-    ],
+    messages: [],
   });
 
   // Derived state for the UI
