@@ -32,7 +32,7 @@ export default function ChatWidget() {
 
   const [image, setImage] = useState(null);
   const fileInputRef = useRef(null);
-  const textareaRef = useRef(null);
+  const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const avatarSrc = "https://i.pravatar.cc/150?u=jennifer";
@@ -62,7 +62,7 @@ export default function ChatWidget() {
     <div className="fixed bottom-6 right-6 z-50">
       {isOpen && (
         <Card
-          className={`w-[400px] sm:w-[360px] ${isMessageEmpty ? "h-[320px]" : "h-[580px]"} p-0 rounded-2xl shadow-none`}
+          className={`w-100 sm:w-90 ${isMessageEmpty ? "h-80" : "h-145"} p-0 rounded-2xl shadow-none`}
         >
           <ChatHeader
             title="Jennifer"
@@ -112,8 +112,7 @@ export default function ChatWidget() {
             onSend={() => onSend()}
             placeholder="Message..."
             fileInputRef={fileInputRef}
-            textareaRef={textareaRef}
-            isMessageEmpty={isMessageEmpty}
+            inputRef={inputRef}
           />
         </Card>
       )}

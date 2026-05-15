@@ -1,6 +1,6 @@
 import React from "react";
-import { ArrowUp, Paperclip, X } from "lucide-react";
-import { Button } from "@heroui/react";
+import { ArrowUp, Image, Paperclip, X } from "lucide-react";
+import { Button, Input, Surface } from "@heroui/react";
 
 interface ChatComposerProps {
   image: string | null;
@@ -8,12 +8,12 @@ interface ChatComposerProps {
   isLoading: boolean;
   onImageClear: () => void;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onInputChange: (value: string, element: HTMLTextAreaElement) => void;
-  onInputKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onInputChange: (value: string, element: HTMLInputElement) => void;
+  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onSend: () => void;
   placeholder?: string;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export function ChatComposer({
@@ -27,42 +27,46 @@ export function ChatComposer({
   onSend,
   placeholder = "Type a message...",
   fileInputRef,
-  textareaRef,
+  inputRef,
 }: ChatComposerProps) {
   const isSendDisabled = isLoading || (!input.trim() && !image);
 
   return (
-    <footer className="px-4 pb-4 bg-white/80 backdrop-blur-sm shrink-0 mt-auto">
+    <Surface
+      className="px-4 pb-4 pt-3 shrink-0 mt-auto rounded-none"
+      variant="default"
+    >
       {/* Image Preview Area */}
       {image && (
         <div className="relative inline-block mb-3 group">
           <img
             src={image}
             alt="Preview"
-            className="h-20 w-20 rounded-xl border border-gray-200 object-cover shadow-sm ring-2 ring-white"
+            className="h-20 w-20 rounded-xl object-cover"
           />
-          <button
-            type="button"
+          <Button
+            isIconOnly
+            size="sm"
+            variant="danger"
+            className="absolute -top-2 -right-2"
             onClick={onImageClear}
-            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-all scale-90 group-hover:scale-100"
-            aria-label="Remove image"
           >
             <X size={14} />
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Input Container */}
-      <div className="flex items-end gap-1 bg-slate-50 border border-gray-200 rounded-2xl px-2 py-1.5 focus-within:bg-white focus-within:border-blue-900/40 focus-within:ring-4 focus-within:ring-blue-900/5 transition-all duration-200 shadow-sm">
+      <div className="flex items-end gap-2">
         {/* Attachment Button */}
-        <button
-          type="button"
+        <Button
+          isIconOnly
+          variant="tertiary"
+          size="md"
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 text-gray-500 hover:text-blue-800 hover:bg-blue-50 transition-colors rounded-xl mb-0.5"
-          aria-label="Attach image"
         >
-          <Paperclip size={20} />
-        </button>
+          <Image size={20} />
+        </Button>
 
         <input
           type="file"
@@ -72,32 +76,28 @@ export function ChatComposer({
           className="hidden"
         />
 
-        {/* Text Area */}
-        <textarea
-          ref={textareaRef}
-          rows={1}
+        {/* Single-line input */}
+        <Input
+          ref={inputRef}
           value={input}
           onChange={(e) => onInputChange(e.target.value, e.target)}
           onKeyDown={onInputKeyDown}
           placeholder={placeholder}
-          className="flex-1 max-h-[140px] bg-transparent border-none outline-none resize-none py-2.5 px-2 text-[15px] text-gray-700 placeholder:text-gray-400 leading-tight"
+          className="flex-1"
+          variant="secondary"
         />
 
         {/* Send Button */}
-        <button
-          type="button"
+        <Button
+          isIconOnly
+          variant="primary"
           onClick={onSend}
-          disabled={isSendDisabled}
-          className={`p-2.5 rounded-xl transition-all duration-200 mb-0.5 mr-0.5 flex items-center justify-center ${
-            isSendDisabled
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "bg-[#25418b] text-white shadow-md hover:bg-[#1e3470] active:scale-95"
-          }`}
-          aria-label="Send message"
+          isDisabled={isSendDisabled}
+          size="md"
         >
           <ArrowUp size={18} strokeWidth={3} />
-        </button>
+        </Button>
       </div>
-    </footer>
+    </Surface>
   );
 }

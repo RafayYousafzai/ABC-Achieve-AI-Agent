@@ -34,7 +34,9 @@ export function useChatWidget() {
 
   // Unified submit handler
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     if (input.trim()) {
       sendMessage({ text: input });
       setInput("");
