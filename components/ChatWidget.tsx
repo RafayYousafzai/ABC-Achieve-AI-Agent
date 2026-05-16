@@ -19,6 +19,7 @@ export default function ChatWidget() {
     isReady,
     isProcessing,
     handleSubmit,
+    sendText,
   } = useChatWidget();
 
   const [image, setImage] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export default function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const avatarSrc = "https://i.pravatar.cc/150?u=Henry";
-  const quickPrompts = ["Yes", "No", "Espanol"];
+  const quickPrompts = ["Yes", "No", "Español"];
 
   // Auto-scroll
   useEffect(() => {
@@ -79,10 +80,12 @@ export default function ChatWidget() {
   );
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div
+      className={`fixed bottom-6 z-50 ${isOpen ? "left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0" : "right-6"}`}
+    >
       {isOpen && (
         <Card
-          className={`w-100 sm:w-90 ${isMessageEmpty ? "h-80" : "h-145"} p-0 rounded-2xl shadow-none`}
+          className={`w-[95vw] max-w-[420px] sm:w-[440px] md:w-[460px] ${isMessageEmpty ? "h-60" : "h-160"} p-0 rounded-2xl shadow-none`}
         >
           <ChatHeader
             title="Jennifer"
@@ -104,7 +107,25 @@ export default function ChatWidget() {
               isLoading={isProcessing}
               isEmptyConversationState={isMessageEmpty}
               quickPrompts={quickPrompts}
-              onQuickPromptSelect={(prompt) => setInput(prompt)}
+              onQuickPromptSelect={(prompt) => {
+                let message = "";
+
+                if (prompt === quickPrompts[2]) {
+                  message =
+                    "Me interesa la terapia ABA. ¿Podría responderme en español, por favor?";
+                } else if (prompt === "Yes") {
+                  message = "Yes, I am interested in ABA therapy.";
+                } else if (prompt === "No") {
+                  message = "No, I am not interested in ABA therapy.";
+                } else {
+                  message = `${prompt} I am interested in ABA therapy.`;
+                }
+
+                // Update the composer visually and send immediately
+                setInput(message);
+                // Use sendText to avoid relying on setInput being asynchronous
+                sendText(message);
+              }}
               avatarSrc={avatarSrc}
             />
 
@@ -134,6 +155,7 @@ export default function ChatWidget() {
             placeholder="Message..."
             fileInputRef={fileInputRef}
             inputRef={inputRef}
+            isEmptyConversationState={isMessageEmpty}
           />
         </Card>
       )}

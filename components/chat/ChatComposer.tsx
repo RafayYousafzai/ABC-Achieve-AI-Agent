@@ -14,6 +14,7 @@ interface ChatComposerProps {
   placeholder?: string;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  isEmptyConversationState: boolean;
 }
 
 // Wrapped in memo to prevent unnecessary re-renders when messages stream in the parent
@@ -29,6 +30,7 @@ export const ChatComposer = memo(function ChatComposer({
   placeholder = "Type a message...",
   fileInputRef,
   inputRef,
+  isEmptyConversationState,
 }: ChatComposerProps) {
   const isSendDisabled = isLoading || (!input.trim() && !image);
 
@@ -39,6 +41,8 @@ export const ChatComposer = memo(function ChatComposer({
       fileInputRef.current.value = "";
     }
   }, [onImageClear, fileInputRef]);
+
+  if (isEmptyConversationState) return null;
 
   return (
     <Surface className="px-4 pb-4 shrink-0 rounded-none" variant="default">

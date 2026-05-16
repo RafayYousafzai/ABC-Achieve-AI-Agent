@@ -106,6 +106,48 @@ export function useChatWidget() {
     [input, sendMessage, sessionId],
   );
 
+  // Helper to send a provided text (used for quick prompts to avoid
+  // relying on stale state when setInput is asynchronous)
+  const sendText = useCallback(
+    async (text: string, selectedFile?: File | null) => {
+      let finalMessageText = text.trim();
+      let uploadedUrl: string | null = null;
+
+      if (selectedFile) {
+        setIsUploading(true);
+        uploadedUrl = await uploadFileToSupabase(selectedFile, sessionId);
+        setIsUploading(false);
+
+        if (!uploadedUrl) {
+          finalMessageText += selectedFile
+            ? "\n[System Notification: User tried to attach a document, but the upload failed.]"
+            : "";
+        }
+      }
+
+      if (uploadedUrl && selectedFile) {
+        const filePart = {
+          type: "file" as const,
+          mediaType: selectedFile.type || "image/*",
+          filename: selectedFile.name,
+          url: uploadedUrl,
+        };
+
+        if (finalMessageText) {
+          await sendMessage({ text: finalMessageText, files: [filePart] });
+        } else {
+          await sendMessage({ files: [filePart] });
+        }
+      } else if (finalMessageText) {
+        await sendMessage({ text: finalMessageText });
+      }
+
+      // Clear the input after sending
+      setInput("");
+    },
+    [sendMessage, sessionId],
+  );
+
   return {
     isOpen,
     setIsOpen,
@@ -117,5 +159,6 @@ export function useChatWidget() {
     isReady,
     isProcessing,
     handleSubmit,
+    sendText,
   };
 }
