@@ -56,7 +56,7 @@ function ThinkingIndicator({ isToolActive }: { isToolActive: boolean }) {
     <div className="flex items-center gap-2 min-h-5">
       {isToolActive ? (
         <span className="text-[13px] text-gray-500">
-          <TextShimmer>Thinking hard...</TextShimmer>
+          <TextShimmer>Thinking...</TextShimmer>
         </span>
       ) : (
         <div className="loader" />
