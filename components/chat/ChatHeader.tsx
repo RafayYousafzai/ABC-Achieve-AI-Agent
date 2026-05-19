@@ -19,7 +19,7 @@ export function ChatHeader({
   isMessageEmpty,
 }: ChatHeaderProps) {
   return (
-    <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-[#0084F2] text-white rounded-full">
+    <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-[#0084F2] text-white">
       <div className="flex items-center gap-3">
         <div className="relative">
           <Image src={"/abc-logo.png"} alt={title} width={40} height={40} />
