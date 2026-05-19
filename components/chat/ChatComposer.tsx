@@ -1,6 +1,6 @@
-import React, { memo, useCallback } from "react";
+import React, { memo, useCallback, useState, useEffect } from "react";
 import { ArrowUp, Image as ImageIcon, X } from "lucide-react";
-import { Button, Input, Spinner, Surface } from "@heroui/react";
+import { Button, Input, Spinner, Surface, Skeleton } from "@heroui/react";
 
 interface ChatComposerProps {
   image: string | null;
@@ -33,6 +33,15 @@ export const ChatComposer = memo(function ChatComposer({
   isEmptyConversationState,
 }: ChatComposerProps) {
   const isSendDisabled = isLoading || (!input.trim() && !image);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!image) return;
+    setIsImageLoaded(false);
+    const img = new window.Image();
+    img.onload = () => setIsImageLoaded(true);
+    img.src = image;
+  }, [image]);
 
   // Fix: Reset the actual file input element so the user can re-upload the same file if they clear it
   const handleImageClear = useCallback(() => {
@@ -49,11 +58,15 @@ export const ChatComposer = memo(function ChatComposer({
       {/* Image Preview Area */}
       {image && (
         <div className="relative inline-block mb-3 group">
-          <img
-            src={image}
-            alt="Preview"
-            className="h-20 w-20 rounded-xl object-cover"
-          />
+          {isImageLoaded ? (
+            <img
+              src={image}
+              alt="Preview"
+              className="h-20 w-20 rounded-xl object-cover"
+            />
+          ) : (
+            <Skeleton className="rounded-xl w-20 h-20" />
+          )}
           <Button
             isIconOnly
             size="sm"

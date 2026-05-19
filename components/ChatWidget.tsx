@@ -20,10 +20,12 @@ export default function ChatWidget() {
     isProcessing,
     handleSubmit,
     sendText,
+    isUploading,
   } = useChatWidget();
 
   const [image, setImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -46,6 +48,21 @@ export default function ChatWidget() {
     };
   }, [image]);
 
+  // Clear the uploading preview once the real message with the image
+  // has appeared in the message list (not based on isUploading, which
+  // fires too early — before sendMessage adds the message to the list)
+  useEffect(() => {
+    if (!uploadingImage) return;
+
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
+    const hasFilePart = lastUserMsg?.parts?.some((p: any) => p.type === "file");
+
+    if (hasFilePart) {
+      URL.revokeObjectURL(uploadingImage);
+      setUploadingImage(null);
+    }
+  }, [messages, uploadingImage]);
+
   const clearAttachment = () => {
     if (image) {
       URL.revokeObjectURL(image);
@@ -60,8 +77,21 @@ export default function ChatWidget() {
   const onSend = (e?: FormEvent) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!input.trim() && !image) return;
+
+    // Keep a copy of the blob URL for the uploading preview
+    if (image) {
+      setUploadingImage(image);
+    }
+
     handleSubmit(e, selectedFile);
-    clearAttachment();
+
+    // Clear composer state but DON'T revoke the blob URL yet —
+    // uploadingImage still needs it
+    setImage(null);
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   if (!sessionId) return null;
@@ -127,6 +157,7 @@ export default function ChatWidget() {
                 sendText(message);
               }}
               avatarSrc={avatarSrc}
+              uploadingImage={uploadingImage}
             />
 
             <div ref={messagesEndRef} />

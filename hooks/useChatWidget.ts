@@ -160,5 +160,6 @@ export function useChatWidget() {
     isProcessing,
     handleSubmit,
     sendText,
+    isUploading,
   };
 }

@@ -1,5 +1,5 @@
 import type { Message } from "./types";
-import { Avatar, Button, Surface } from "@heroui/react";
+import { Avatar, Button, Surface, Skeleton } from "@heroui/react";
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { TextShimmer } from "../motion-primitives/text-shimmer";
 
@@ -12,6 +12,7 @@ interface ChatMessagesProps {
   quickPrompts: readonly string[];
   onQuickPromptSelect: (prompt: string) => void;
   avatarSrc: string;
+  uploadingImage?: string | null;
 }
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
@@ -94,6 +95,30 @@ function ScrollToBottomButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+// Shows a skeleton until the remote image has fully loaded
+function MessageImage({ url, filename, msgId, index }: { url: string; filename?: string; msgId: string; index: number }) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = new window.Image();
+    img.onload = () => setLoaded(true);
+    img.src = url;
+  }, [url]);
+
+  if (!loaded) {
+    return <Skeleton className="rounded-2xl w-48 h-36 mb-2" />;
+  }
+
+  return (
+    <img
+      key={`${msgId}-file-${index}`}
+      src={url}
+      alt={filename || "Attachment"}
+      className="max-w-full rounded-2xl mb-2"
+    />
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ChatMessages({
@@ -103,6 +128,7 @@ export function ChatMessages({
   quickPrompts,
   onQuickPromptSelect,
   avatarSrc,
+  uploadingImage,
 }: ChatMessagesProps) {
   const isMessageEmpty = messages.length === 0;
 
@@ -266,11 +292,12 @@ export function ChatMessages({
                     >
                       {fileParts.map((part, index) =>
                         part.mediaType?.startsWith("image/") ? (
-                          <img
+                          <MessageImage
                             key={`${msg.id}-file-${index}`}
-                            src={part.url}
-                            alt={part.filename || "Attachment"}
-                            className="max-w-full rounded-2xl mb-2"
+                            url={part.url}
+                            filename={part.filename}
+                            msgId={msg.id}
+                            index={index}
                           />
                         ) : null,
                       )}
@@ -280,6 +307,16 @@ export function ChatMessages({
                 </div>
               );
             })}
+
+            {/* Uploading image preview — just a skeleton placeholder */}
+            {uploadingImage && (
+              <div className="flex w-full justify-end">
+                <div className="max-w-[80%] ml-auto">
+                  <Skeleton className="rounded-3xl w-48 h-36" />
+                </div>
+              </div>
+            )}
+
 
             {/* Loading / thinking bubble */}
             {showLoadingBubble && (
