@@ -114,8 +114,9 @@ function MessageImage({ url, filename, msgId, index }: { url: string; filename?:
       key={`${msgId}-file-${index}`}
       src={url}
       alt={filename || "Attachment"}
-      className="max-w-full rounded-2xl mb-2"
+      className="max-w-full rounded-2xl mb-2 animate-[fadeScaleIn_0.3s_ease-out]"
     />
+
   );
 }
 
@@ -278,16 +279,14 @@ export function ChatMessages({
                   {isAssistant && <div className="mt-auto">{AiAvatar}</div>}
 
                   <div
-                    className={`flex flex-col gap-2 max-w-[80%] ${
-                      !isAssistant ? "items-end ml-auto" : "items-start"
-                    }`}
+                    className={`flex flex-col gap-2 max-w-[80%] ${!isAssistant ? "items-end ml-auto" : "items-start"
+                      }`}
                   >
                     <Surface
-                      className={`py-3.5 px-5 text-[15px] leading-relaxed transition-opacity duration-200 ${
-                        !isAssistant
-                          ? "bg-[#0084F2] text-white rounded-3xl"
-                          : "bg-slate-100 text-gray-800 rounded-3xl"
-                      }`}
+                      className={`py-3.5 px-5 text-[15px] leading-relaxed transition-opacity duration-200 ${!isAssistant
+                        ? "bg-[#0084F2] text-white rounded-3xl"
+                        : "bg-slate-100 text-gray-800 rounded-3xl"
+                        }`}
                       variant="default"
                     >
                       {fileParts.map((part, index) =>
