@@ -176,6 +176,14 @@ export default function ChatWidget() {
             onImageUpload={(e) => {
               if (e.target.files && e.target.files[0]) {
                 const file = e.target.files[0];
+                const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
+                if (file.size > MAX_FILE_SIZE) {
+                  alert("File size exceeds the 5MB limit. Please upload a smaller file.");
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                  return;
+                }
                 setSelectedFile(file);
                 setImage(URL.createObjectURL(file));
               }

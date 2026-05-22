@@ -51,6 +51,7 @@ interface StoredSession {
   sessionId: string;
   expiresAt: number;
   messages: any[];
+  hasSentFollowUp?: boolean;
 }
 
 const SESSION_KEY = "ellie_chat_session";
@@ -92,6 +93,7 @@ export function useChatWidget() {
       sessionId: newSessionId,
       expiresAt: Date.now() + ONE_HOUR,
       messages: [],
+      hasSentFollowUp: false,
     };
     if (typeof window !== "undefined") {
       localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
@@ -102,8 +104,12 @@ export function useChatWidget() {
 
   const sessionId = sessionData?.sessionId || "";
 
+  const [hasSentFollowUp, setHasSentFollowUp] = useState(() => {
+    return sessionData?.hasSentFollowUp || false;
+  });
+
   // Initialize Vercel AI SDK Chat
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: { sessionId },
@@ -118,9 +124,33 @@ export function useChatWidget() {
       sessionId,
       expiresAt: Date.now() + ONE_HOUR,
       messages: messages.slice(-20),
+      hasSentFollowUp,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  }, [messages, sessionId]);
+  }, [messages, sessionId, hasSentFollowUp]);
+
+  // Automated inactivity check (45 seconds of silence after the last assistant response)
+  useEffect(() => {
+    if (messages.length === 0 || hasSentFollowUp) return;
+
+    // Check if the last message is from the assistant
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role !== "assistant") return;
+
+    // Set a timer for 45 seconds
+    const timer = setTimeout(() => {
+      const followUp = {
+        id: `followup_${Date.now()}`,
+        role: "assistant" as const,
+        content: "Hi, are you still there?",
+        parts: [{ type: "text" as const, text: "Hi, are you still there?" }],
+      };
+      setMessages(prev => [...prev, followUp]);
+      setHasSentFollowUp(true);
+    }, 45000);
+
+    return () => clearTimeout(timer);
+  }, [messages, hasSentFollowUp, setMessages]);
 
   // Derived state for the UI (Combine SDK loading with our custom Upload loading)
   const isReady = (status === "ready" || status === "error") && !isUploading;
@@ -134,6 +164,12 @@ export function useChatWidget() {
       let uploadedUrl: string | null = null;
 
       if (selectedFile) {
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB standard limit
+        if (selectedFile.size > MAX_FILE_SIZE) {
+          alert("File size exceeds the 5MB limit. Please upload a smaller file.");
+          setInput("");
+          return;
+        }
         setIsUploading(true);
         uploadedUrl = await uploadFileToSupabase(selectedFile, sessionId);
         setIsUploading(false);
