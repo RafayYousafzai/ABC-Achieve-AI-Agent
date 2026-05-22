@@ -24,8 +24,12 @@ export default function ChatWidget() {
   } = useChatWidget();
 
   const [mounted, setMounted] = useState(false);
+  const [isEmbedded, setIsEmbedded] = useState(false);
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined") {
+      setIsEmbedded(window.self !== window.top);
+    }
   }, []);
 
   const [image, setImage] = useState<string | null>(null);
@@ -52,6 +56,18 @@ export default function ChatWidget() {
       }
     };
   }, [image]);
+
+  // Communicate widget state (open/close and message state) to the parent window (e.g. WordPress host)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isMessageEmpty = messages.length === 0;
+    const payload = {
+      type: "ellie-chat-widget",
+      isOpen,
+      isMessageEmpty,
+    };
+    window.parent.postMessage(payload, "*");
+  }, [isOpen, messages.length]);
 
   // Clear the uploading preview once the real message with the image
   // has appeared in the message list (not based on isUploading, which
@@ -118,7 +134,11 @@ export default function ChatWidget() {
 
   return (
     <div
-      className={`fixed bottom-6 z-50 ${isOpen ? "left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0" : "right-6"}`}
+      className={
+        isEmbedded
+          ? "w-full h-full flex items-end justify-end p-0"
+          : `fixed bottom-6 z-50 ${isOpen ? "left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0" : "right-6"}`
+      }
     >
       {isOpen && (
         <Card
@@ -210,13 +230,12 @@ export default function ChatWidget() {
 
       {/* Bubble Button */}
       {!isOpen && (
-        <Button
-          isIconOnly
+        <button
           onClick={() => setIsOpen(true)}
-          className={"h-20 w-20 rounded-full"}
+          className="h-20 w-20 rounded-full cursor-pointer focus:outline-none flex items-center justify-center transition-transform hover:scale-105 active:scale-95 bg-transparent border-none p-0 outline-none"
         >
-          {AiAvatar}
-        </Button>
+          <AiAvatar />
+        </button>
       )}
     </div>
   );
