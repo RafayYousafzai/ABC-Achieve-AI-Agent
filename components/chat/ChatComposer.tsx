@@ -91,7 +91,7 @@ export const ChatComposer = memo(function ChatComposer({
           aria-label="Upload image"
         >
           {/* Renamed import to ImageIcon to prevent IDE confusion with native DOM Image */}
-          <ImageIcon size={20} />
+          <ImageIcon size={20} color="#81717A" />
         </Button>
 
         <input

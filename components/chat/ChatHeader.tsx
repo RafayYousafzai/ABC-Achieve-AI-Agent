@@ -19,17 +19,17 @@ export function ChatHeader({
   isMessageEmpty,
 }: ChatHeaderProps) {
   return (
-    <header className="relative flex items-center justify-between px-4 py-3 shrink-0 bg-[#0084F2] text-white">
+    <header className="relative flex items-center justify-between px-4 pt-3 shrink-0 bg-white">
       <div className="flex items-center gap-3">
         <div className="relative">
           <Image src={"/abc-logo.png"} alt={title} width={40} height={40} />
         </div>
 
         <div className="flex flex-col ml-2">
-          <Text.Heading className="font-semibold text-[17px] leading-tight text-white">
+          <Text.Heading className="font-semibold text-[17px] leading-tight text-black/80">
             {title}
           </Text.Heading>
-          <p className="text-[11px] text-white opacity-90 font-medium">
+          <p className="text-[11px] text-black/80 opacity-80 font-medium">
             {subtitle}
           </p>
         </div>
@@ -43,7 +43,7 @@ export function ChatHeader({
           aria-label="Minimize"
           variant="ghost"
         >
-          <X size={18} className="text-white/80 group-hover:text-white" />
+          <X size={18} className="text-black/80 group-hover:text-black" />
         </Button>
       </div>
     </header>
