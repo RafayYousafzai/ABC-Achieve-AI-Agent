@@ -4,27 +4,22 @@ export const runtime = "edge";
 
 export async function POST(req) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file");
-    const sessionId = String(formData.get("sessionId") || "anonymous");
+    const { fileName, fileType, sessionId = "anonymous" } = await req.json();
 
-    if (!(file instanceof File)) {
-      return new Response(JSON.stringify({ error: "Missing file" }), {
+    if (!fileName) {
+      return new Response(JSON.stringify({ error: "Missing fileName" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const fileExt = file.name.split(".").pop() || "png";
-    const fileName = `${sessionId}/${Date.now()}.${fileExt}`;
-    const filePath = `public/${fileName}`;
+    const fileExt = fileName.split(".").pop() || "png";
+    const fileNameOnStorage = `${sessionId}/${Date.now()}.${fileExt}`;
+    const filePath = `public/${fileNameOnStorage}`;
 
-    const { error } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from("insurance-cards")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+      .createSignedUploadUrl(filePath);
 
     if (error) {
       throw error;
@@ -34,7 +29,10 @@ export async function POST(req) {
       data: { publicUrl },
     } = supabase.storage.from("insurance-cards").getPublicUrl(filePath);
 
-    return Response.json({ url: publicUrl });
+    return Response.json({
+      signedUrl: data.signedUrl,
+      publicUrl,
+    });
   } catch (error) {
     console.error("Upload API Crash:", error);
     return new Response(JSON.stringify({ error: error.message }), {

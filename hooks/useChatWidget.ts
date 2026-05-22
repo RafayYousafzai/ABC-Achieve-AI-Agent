@@ -5,21 +5,42 @@ import { DefaultChatTransport } from "ai";
 import { useEffect, useState, useCallback } from "react";
 const uploadFileToSupabase = async (fileObj: File, sessionId: string) => {
   try {
-    const formData = new FormData();
-    formData.append("file", fileObj);
-    formData.append("sessionId", sessionId);
-
+    // 1. Get signed upload URL and public URL from backend
     const response = await fetch("/api/upload", {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        fileName: fileObj.name,
+        fileType: fileObj.type,
+        sessionId,
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Upload failed with status ${response.status}`);
+      throw new Error(`Failed to generate upload URL: status ${response.status}`);
     }
 
-    const result = await response.json();
-    return result.url as string;
+    const { signedUrl, publicUrl } = await response.json();
+    if (!signedUrl || !publicUrl) {
+      throw new Error("Invalid response from upload API");
+    }
+
+    // 2. Perform direct upload to the signed URL using PUT
+    const uploadResponse = await fetch(signedUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": fileObj.type,
+      },
+      body: fileObj,
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Direct upload failed with status ${uploadResponse.status}`);
+    }
+
+    return publicUrl as string;
   } catch (err) {
     console.error("File upload failed:", err);
     return null;

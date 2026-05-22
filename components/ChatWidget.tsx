@@ -23,6 +23,11 @@ export default function ChatWidget() {
     isUploading,
   } = useChatWidget();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [image, setImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
@@ -94,7 +99,7 @@ export default function ChatWidget() {
     }
   };
 
-  if (!sessionId) return null;
+  if (!mounted || !sessionId) return null;
 
   const isMessageEmpty = messages.length === 0;
 
