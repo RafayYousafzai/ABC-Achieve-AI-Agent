@@ -28,26 +28,22 @@ const uploadFileToSupabase = async (fileObj: File, sessionId: string) => {
 
 export function useChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [sessionId, setSessionId] = useState("");
   const [input, setInput] = useState("");
 
   // Custom loading state to handle the delay while uploading the file
   const [isUploading, setIsUploading] = useState(false);
 
-  // Handle session ID initialization safely
-  useEffect(() => {
+  const [sessionId] = useState(() => {
+    if (typeof window === "undefined") return "";
     let storedSession = localStorage.getItem("ellie_session_id");
     if (!storedSession) {
-      const randomPart =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID().substring(0, 8)
-          : Math.random().toString(36).substring(2, 9);
-
+      const randomPart = crypto.randomUUID().substring(0, 8);
       storedSession = `sess_${randomPart}`;
       localStorage.setItem("ellie_session_id", storedSession);
     }
-    setSessionId(storedSession);
-  }, []);
+    console.log("sessionId initialized:", storedSession); // ✅ verify it's not empty
+    return storedSession;
+  });
 
   // Initialize Vercel AI SDK Chat
   const { messages, sendMessage, status, error } = useChat({
@@ -67,6 +63,7 @@ export function useChatWidget() {
   const handleSubmit = useCallback(
     async (e?: React.SyntheticEvent, selectedFile?: File | null) => {
       e?.preventDefault();
+      setInput("");
 
       let finalMessageText = input.trim();
       let uploadedUrl: string | null = null;
@@ -97,10 +94,8 @@ export function useChatWidget() {
         } else {
           await sendMessage({ files: [filePart] });
         }
-        setInput("");
       } else if (finalMessageText) {
         await sendMessage({ text: finalMessageText });
-        setInput("");
       }
     },
     [input, sendMessage, sessionId],
