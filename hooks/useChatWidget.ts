@@ -47,6 +47,32 @@ const uploadFileToSupabase = async (fileObj: File, sessionId: string) => {
   }
 };
 
+interface StoredSession {
+  sessionId: string;
+  expiresAt: number;
+  messages: any[];
+}
+
+const SESSION_KEY = "ellie_chat_session";
+const ONE_HOUR = 60 * 60 * 1000;
+
+const getStoredSession = (): StoredSession | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredSession;
+    if (Date.now() > parsed.expiresAt) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return parsed;
+  } catch (err) {
+    console.error("Error reading stored session:", err);
+    return null;
+  }
+};
+
 export function useChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -54,17 +80,27 @@ export function useChatWidget() {
   // Custom loading state to handle the delay while uploading the file
   const [isUploading, setIsUploading] = useState(false);
 
-  const [sessionId] = useState(() => {
-    if (typeof window === "undefined") return "";
-    let storedSession = localStorage.getItem("ellie_session_id");
-    if (!storedSession) {
-      const randomPart = crypto.randomUUID().substring(0, 8);
-      storedSession = `sess_${randomPart}`;
-      localStorage.setItem("ellie_session_id", storedSession);
+  const [sessionData] = useState(() => {
+    const stored = getStoredSession();
+    if (stored) {
+      console.log("Resuming session:", stored.sessionId);
+      return stored;
     }
-    console.log("sessionId initialized:", storedSession); // ✅ verify it's not empty
-    return storedSession;
+    const randomPart = typeof crypto !== "undefined" ? crypto.randomUUID().substring(0, 8) : Math.random().toString(36).substring(2, 10);
+    const newSessionId = `sess_${randomPart}`;
+    const newSession: StoredSession = {
+      sessionId: newSessionId,
+      expiresAt: Date.now() + ONE_HOUR,
+      messages: [],
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+    }
+    console.log("Initialized new session:", newSessionId);
+    return newSession;
   });
+
+  const sessionId = sessionData?.sessionId || "";
 
   // Initialize Vercel AI SDK Chat
   const { messages, sendMessage, status, error } = useChat({
@@ -72,59 +108,27 @@ export function useChatWidget() {
       api: "/api/chat",
       body: { sessionId },
     }),
-    messages: [],
+    messages: sessionData?.messages || [],
   });
+
+  // Persist messages and update expiry (keep only the last 20 messages to prevent storage bloat)
+  useEffect(() => {
+    if (typeof window === "undefined" || !sessionId) return;
+    const session: StoredSession = {
+      sessionId,
+      expiresAt: Date.now() + ONE_HOUR,
+      messages: messages.slice(-20),
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  }, [messages, sessionId]);
 
   // Derived state for the UI (Combine SDK loading with our custom Upload loading)
   const isReady = (status === "ready" || status === "error") && !isUploading;
   const isProcessing =
     status === "submitted" || status === "streaming" || isUploading;
 
-  // 4. Unified submit handler updated to accept a File object
-  const handleSubmit = useCallback(
-    async (e?: React.SyntheticEvent, selectedFile?: File | null) => {
-      e?.preventDefault();
-      setInput("");
-
-      let finalMessageText = input.trim();
-      let uploadedUrl: string | null = null;
-
-      // Handle the file upload BEFORE sending the message to the AI
-      if (selectedFile) {
-        setIsUploading(true);
-        uploadedUrl = await uploadFileToSupabase(selectedFile, sessionId);
-        setIsUploading(false);
-
-        if (!uploadedUrl) {
-          finalMessageText += selectedFile
-            ? "\n[System Notification: User tried to attach a document, but the upload failed.]"
-            : "";
-        }
-      }
-
-      if (uploadedUrl && selectedFile) {
-        const filePart = {
-          type: "file" as const,
-          mediaType: selectedFile.type || "image/*",
-          filename: selectedFile.name,
-          url: uploadedUrl,
-        };
-
-        if (finalMessageText) {
-          await sendMessage({ text: finalMessageText, files: [filePart] });
-        } else {
-          await sendMessage({ files: [filePart] });
-        }
-      } else if (finalMessageText) {
-        await sendMessage({ text: finalMessageText });
-      }
-    },
-    [input, sendMessage, sessionId],
-  );
-
-  // Helper to send a provided text (used for quick prompts to avoid
-  // relying on stale state when setInput is asynchronous)
-  const sendText = useCallback(
+  // Helper to handle uploading file (if present) and sending the message
+  const uploadAndSend = useCallback(
     async (text: string, selectedFile?: File | null) => {
       let finalMessageText = text.trim();
       let uploadedUrl: string | null = null;
@@ -135,9 +139,7 @@ export function useChatWidget() {
         setIsUploading(false);
 
         if (!uploadedUrl) {
-          finalMessageText += selectedFile
-            ? "\n[System Notification: User tried to attach a document, but the upload failed.]"
-            : "";
+          finalMessageText += "\n[System Notification: User tried to attach a document, but the upload failed.]";
         }
       }
 
@@ -149,19 +151,36 @@ export function useChatWidget() {
           url: uploadedUrl,
         };
 
-        if (finalMessageText) {
-          await sendMessage({ text: finalMessageText, files: [filePart] });
-        } else {
-          await sendMessage({ files: [filePart] });
-        }
+        await sendMessage(
+          finalMessageText
+            ? { text: finalMessageText, files: [filePart] }
+            : { files: [filePart] }
+        );
       } else if (finalMessageText) {
         await sendMessage({ text: finalMessageText });
       }
 
-      // Clear the input after sending
       setInput("");
     },
-    [sendMessage, sessionId],
+    [sendMessage, sessionId]
+  );
+
+  // Unified submit handler updated to accept a File object
+  const handleSubmit = useCallback(
+    async (e?: React.SyntheticEvent, selectedFile?: File | null) => {
+      e?.preventDefault();
+      await uploadAndSend(input, selectedFile);
+    },
+    [input, uploadAndSend]
+  );
+
+  // Helper to send a provided text (used for quick prompts to avoid
+  // relying on stale state when setInput is asynchronous)
+  const sendText = useCallback(
+    async (text: string, selectedFile?: File | null) => {
+      await uploadAndSend(text, selectedFile);
+    },
+    [uploadAndSend]
   );
 
   return {
