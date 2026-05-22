@@ -8,7 +8,34 @@ export const runtime = "edge";
 export async function POST(req) {
   try {
     const { messages, sessionId } = await req.json();
-    const modelMessages = await convertToModelMessages(messages);
+
+    // Merge consecutive assistant messages to prevent Gemini API 400 errors due to consecutive model turns
+    const mergedMessages = [];
+    for (const msg of messages) {
+      if (
+        mergedMessages.length > 0 &&
+        msg.role === "assistant" &&
+        mergedMessages[mergedMessages.length - 1].role === "assistant"
+      ) {
+        const lastMsg = mergedMessages[mergedMessages.length - 1];
+        
+        // Merge contents
+        if (msg.content) {
+          lastMsg.content = (lastMsg.content || "") + "\n\n" + msg.content;
+        }
+        
+        // Merge parts if they exist
+        if (msg.parts && lastMsg.parts) {
+          lastMsg.parts = [...lastMsg.parts, ...msg.parts];
+        } else if (msg.parts) {
+          lastMsg.parts = msg.parts;
+        }
+      } else {
+        mergedMessages.push({ ...msg });
+      }
+    }
+
+    const modelMessages = await convertToModelMessages(mergedMessages);
 
     const result = streamText({
       model: google("gemini-3.1-flash-lite"),
