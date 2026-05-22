@@ -142,7 +142,7 @@ export default function ChatWidget() {
     >
       {isOpen && (
         <Card
-          className={`w-[95vw] max-w-[420px] sm:w-[440px] md:w-[460px] ${isMessageEmpty ? "h-65" : "h-160"} p-0 rounded-2xl shadow-none`}
+          className={`w-[95vw] max-w-[420px] sm:w-[440px] md:w-[460px] ${isMessageEmpty ? "h-65" : "h-160"} p-0 rounded-3xl  shadow-2xl/10`}
         >
           <ChatHeader
             title="Ellie"
