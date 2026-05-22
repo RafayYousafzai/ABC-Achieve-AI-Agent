@@ -254,7 +254,7 @@ export function ChatMessages({
                 <Avatar.Fallback>JD</Avatar.Fallback>
               </Avatar>
               <span className="text-black text-[13px] font-semibold mt-1">
-                Jennifer
+                Ellie
               </span>
             </div>
 

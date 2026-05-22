@@ -35,7 +35,7 @@ export default function ChatWidget() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const avatarSrc = "https://i.pravatar.cc/150?u=Henry";
+  const avatarSrc = "/portrait.png";
   const quickPrompts = ["Yes", "No", "Español"];
 
   // Auto-scroll
@@ -125,7 +125,7 @@ export default function ChatWidget() {
           className={`w-[95vw] max-w-[420px] sm:w-[440px] md:w-[460px] ${isMessageEmpty ? "h-65" : "h-160"} p-0 rounded-2xl shadow-none`}
         >
           <ChatHeader
-            title="Jennifer"
+            title="Ellie"
             subtitle="Online"
             avatarSrc={avatarSrc}
             onMinimize={() => setIsOpen(false)}
