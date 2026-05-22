@@ -51,7 +51,7 @@ export const ChatComposer = memo(function ChatComposer({
     }
   }, [onImageClear, fileInputRef]);
 
-  if (isEmptyConversationState) return null;
+  // if (isEmptyConversationState) return null;
 
   return (
     <Surface className="px-4 pb-4 shrink-0 rounded-none" variant="default">

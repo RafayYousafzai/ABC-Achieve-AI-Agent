@@ -59,7 +59,9 @@ export default function ChatWidget() {
   useEffect(() => {
     if (!uploadingImage) return;
 
-    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
+    const lastUserMsg = [...messages]
+      .reverse()
+      .find((m: any) => m.role === "user");
     const hasFilePart = lastUserMsg?.parts?.some((p: any) => p.type === "file");
 
     if (hasFilePart) {
@@ -120,7 +122,7 @@ export default function ChatWidget() {
     >
       {isOpen && (
         <Card
-          className={`w-[95vw] max-w-[420px] sm:w-[440px] md:w-[460px] ${isMessageEmpty ? "h-60" : "h-160"} p-0 rounded-2xl shadow-none`}
+          className={`w-[95vw] max-w-[420px] sm:w-[440px] md:w-[460px] ${isMessageEmpty ? "h-65" : "h-160"} p-0 rounded-2xl shadow-none`}
         >
           <ChatHeader
             title="Jennifer"
@@ -178,7 +180,9 @@ export default function ChatWidget() {
                 const file = e.target.files[0];
                 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
                 if (file.size > MAX_FILE_SIZE) {
-                  alert("File size exceeds the 5MB limit. Please upload a smaller file.");
+                  alert(
+                    "File size exceeds the 5MB limit. Please upload a smaller file.",
+                  );
                   if (fileInputRef.current) {
                     fileInputRef.current.value = "";
                   }

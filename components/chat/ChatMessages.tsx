@@ -226,12 +226,12 @@ export function ChatMessages({
         // ── Empty state ──────────────────────────────────────────────────────
         <div className="flex flex-col flex-1 pl-2 pr-4 pb-1">
           {WelcomeMessage}
-          <div className="flex flex-row flex-wrap justify-start gap-2 pt-3 pl-12 mt-auto">
+          <div className="flex flex-row flex-wrap justify-start gap-2 pt-3 pl-12 ml-auto">
             {quickPrompts.slice(0, 3).map((prompt) => (
               <Button
                 key={prompt}
                 onClick={() => onQuickPromptSelect(prompt)}
-                variant="outline"
+                variant="primary"
               >
                 {prompt}
               </Button>
