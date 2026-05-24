@@ -1,0 +1,5 @@
+# achieve-and-chill-event-at-malverne-center
+
+Source URL: https://abcachieve.com/event/achieve-and-chill-event-at-malverne-center/
+
+Skip to content Achieve and Chill – Summer 2025 Gathering at Achievement Behavior Services Malverne Center This was a special in-house summer event hosted at ABS Malverne Center. Families, friends, and community members joined us for an evening of connection, fun, and a chance to explore our newly designed space. The event, lovingly called “Achieve and Chill,” brought together our ABS community in Malverne. Families and friends were invited to celebrate the opening of our updated center and experience firsthand the welcoming environment we’ve created for children and their loved ones. The evening featured light refreshments, fun activities, and plenty of opportunities for families to connect with our team. ABS’s Mission Events like these are an important part of our commitment to building strong, supportive communities. By opening our doors, we aim to create lasting connections between families, caregivers, and our dedicated team.

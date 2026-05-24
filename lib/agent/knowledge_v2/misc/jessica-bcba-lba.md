@@ -1,0 +1,5 @@
+# jessica-bcba-lba
+
+Source URL: https://abcachieve.com/team/jessica-bcba-lba/
+
+Skip to content Jessica, BCBA, LBA Jessica is a NYS licensed behavior analyst and a board certified behavior analyst. Jessica has worked with individuals on the autism spectrum and other developmental disabilities since 2006. Jessica has experience working in residential and public schools, with adults living in congregate care, and providing home services including parent training and supervision. Jessica oversees all aspects of clinical operations, with a focus on providing support and guidance to our per diem team members. Jessica provides quality assurance by reviewing programs and goals to ensure they meet medical necessity and adherence to rules and regulations by governing insurance companies. Jessica works collaboratively with the leadership team to develop and oversee effective clinical practices and organizational growth.

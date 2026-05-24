@@ -45,4 +45,4 @@ next-env.d.ts
 .heroui-docs/
 
 # ignore this folder and its contents
-/lib/agent/knowledge_v2/
+# /lib/agent/knowledge_v2/
