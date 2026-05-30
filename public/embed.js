@@ -103,11 +103,10 @@
     `;
   }
 
-  // 1. Create the container div
+  // Create elements
   const container = document.createElement('div');
   container.id = 'ellie-chat-container';
 
-  // 2. Create the iframe
   const iframe = document.createElement('iframe');
   iframe.id = 'ellie-chat-iframe';
   iframe.src = `${baseUrl}/widget`;
@@ -118,19 +117,11 @@
   console.log('[Ellie Embed] Allowed Origin:', allowedOrigin);
 
   container.appendChild(iframe);
-  
-  // Append to document
-  const targetParent = document.body || document.documentElement;
-  targetParent.appendChild(container);
 
-  // Apply initial styles
-  applyStyles();
-
-  // 3. Set up MutationObserver to protect elements against style hijacking
+  // Set up MutationObserver to protect elements against style hijacking
   const observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
       if (mutation.type === 'attributes' && (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
-        // Disconnect to avoid loop, re-apply, then reconnect
         observer.disconnect();
         applyStyles();
         startObserving();
@@ -143,12 +134,23 @@
     observer.observe(iframe, { attributes: true, attributeFilter: ['style', 'class'] });
   }
 
-  startObserving();
+  // Safe injection method that guarantees document.body is available
+  function injectWidget() {
+    if (document.getElementById('ellie-chat-container')) return;
+    document.body.appendChild(container);
+    applyStyles();
+    startObserving();
+    // Hard enforcer loop in case a layout script tries to override via styling properties
+    setInterval(applyStyles, 500);
+  }
 
-  // 4. Hard enforcer loop in case a layout script tries to override via styling properties
-  setInterval(applyStyles, 500);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectWidget);
+  } else {
+    injectWidget();
+  }
 
-  // 5. Listen to messages from the widget
+  // Listen to messages from the widget
   window.addEventListener('message', function(event) {
     if (!event.data || event.data.type !== 'ellie-chat-widget') return;
 
