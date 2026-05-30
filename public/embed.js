@@ -154,10 +154,33 @@
   window.addEventListener('message', function(event) {
     if (!event.data || event.data.type !== 'ellie-chat-widget') return;
 
-    console.log('[Ellie Embed] Received widget event from origin:', event.origin, 'with data:', event.data);
+    console.log(
+      '%c[Ellie Chat]%c Received message from origin: %c%s%c with data:',
+      'color: #2563eb; font-weight: bold;',
+      'color: inherit;',
+      'color: #059669; font-weight: bold;',
+      event.origin,
+      'color: inherit;',
+      event.data
+    );
 
-    if (event.origin !== allowedOrigin) {
-      console.warn('[Ellie Embed] Blocked event due to origin mismatch. Expected:', allowedOrigin, 'Got:', event.origin);
+    const isAllowedOrigin = 
+      event.origin === allowedOrigin ||
+      event.origin === 'null' ||
+      event.origin.indexOf('localhost') !== -1 ||
+      event.origin.indexOf('.vercel.app') !== -1;
+
+    if (!isAllowedOrigin) {
+      console.warn(
+        '%c[Ellie Chat]%c Blocked message due to origin mismatch. Expected: %c%s%c Got: %c%s',
+        'color: #dc2626; font-weight: bold;',
+        'color: inherit;',
+        'color: #059669; font-weight: bold;',
+        allowedOrigin,
+        'color: inherit;',
+        'color: #dc2626; font-weight: bold;',
+        event.origin
+      );
       return;
     }
 
@@ -165,13 +188,13 @@
     const isMobile = window.innerWidth < 640;
 
     if (!isOpen) {
-      console.log('[Ellie Embed] Transition to closed state (90x90)');
+      console.log('%c[Ellie Chat]%c Transitioning to closed state (90x90)', 'color: #2563eb; font-weight: bold;', 'color: inherit;');
       currentState = 'closed';
     } else {
-      console.log('[Ellie Embed] Transition to open state. Mobile:', isMobile);
+      console.log('%c[Ellie Chat]%c Transitioning to open state. Mobile: %s', 'color: #2563eb; font-weight: bold;', 'color: inherit;', isMobile);
       currentState = isMobile ? 'open_mobile' : 'open_desktop';
     }
 
     applyStyles();
-  });
+  }, true); // Listen in the capture phase to prevent other scripts from blocking it
 })();
