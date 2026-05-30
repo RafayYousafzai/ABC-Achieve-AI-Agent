@@ -56,51 +56,58 @@
     const s = STATES[currentState];
     if (!s) return;
 
+    const activeContainer = document.getElementById('ellie-chat-container');
+    const activeIframe = document.getElementById('ellie-chat-iframe');
+
     // Apply strict styles to the container div
-    container.style.cssText = `
-      position: fixed !important;
-      z-index: 2147483647 !important;
-      border: none !important;
-      overflow: hidden !important;
-      background: transparent !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      max-width: none !important;
-      max-height: none !important;
-      display: block !important;
-      box-sizing: border-box !important;
-      top: auto !important;
-      left: auto !important;
-      transform: none !important;
-      width: ${s.width} !important;
-      height: ${s.height} !important;
-      min-width: ${s.width} !important;
-      min-height: ${s.height} !important;
-      max-width: ${s.width} !important;
-      max-height: ${s.height} !important;
-      bottom: ${s.bottom} !important;
-      right: ${s.right} !important;
-      pointer-events: ${s.pointerEvents} !important;
-    `;
+    if (activeContainer) {
+      activeContainer.style.cssText = `
+        position: fixed !important;
+        z-index: 2147483647 !important;
+        border: none !important;
+        overflow: hidden !important;
+        background: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        max-width: none !important;
+        max-height: none !important;
+        display: block !important;
+        box-sizing: border-box !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+        width: ${s.width} !important;
+        height: ${s.height} !important;
+        min-width: ${s.width} !important;
+        min-height: ${s.height} !important;
+        max-width: ${s.width} !important;
+        max-height: ${s.height} !important;
+        bottom: ${s.bottom} !important;
+        right: ${s.right} !important;
+        pointer-events: ${s.pointerEvents} !important;
+      `;
+    }
 
     // Apply strict styles to the iframe
-    iframe.style.cssText = `
-      width: 100% !important;
-      height: 100% !important;
-      min-width: 100% !important;
-      min-height: 100% !important;
-      max-width: 100% !important;
-      max-height: 100% !important;
-      border: none !important;
-      background: transparent !important;
-      pointer-events: auto !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      display: block !important;
-      box-sizing: border-box !important;
-    `;
+    if (activeIframe) {
+      activeIframe.style.cssText = `
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 100% !important;
+        min-height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        border: none !important;
+        background: transparent !important;
+        pointer-events: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        display: block !important;
+        box-sizing: border-box !important;
+      `;
+    }
   }
 
   // Create elements
@@ -130,8 +137,14 @@
   });
 
   function startObserving() {
-    observer.observe(container, { attributes: true, attributeFilter: ['style', 'class'] });
-    observer.observe(iframe, { attributes: true, attributeFilter: ['style', 'class'] });
+    const activeContainer = document.getElementById('ellie-chat-container');
+    const activeIframe = document.getElementById('ellie-chat-iframe');
+    if (activeContainer) {
+      observer.observe(activeContainer, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+    if (activeIframe) {
+      observer.observe(activeIframe, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
   }
 
   // Safe injection method that guarantees document.body is available
@@ -140,8 +153,16 @@
     document.body.appendChild(container);
     applyStyles();
     startObserving();
-    // Hard enforcer loop in case a layout script tries to override via styling properties
-    setInterval(applyStyles, 500);
+
+    // Hard enforcer loop: verifies parenting, overrides hijacked styles, handles clones
+    setInterval(function() {
+      const activeContainer = document.getElementById('ellie-chat-container');
+      if (activeContainer && activeContainer.parentElement !== document.body) {
+        console.log('%c[Ellie Chat]%c Container was reparented. Re-appending to body.', 'color: #2563eb; font-weight: bold;', 'color: inherit;');
+        document.body.appendChild(activeContainer);
+      }
+      applyStyles();
+    }, 500);
   }
 
   if (document.readyState === 'loading') {
