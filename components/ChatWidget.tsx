@@ -35,7 +35,6 @@ export default function ChatWidget() {
     "How can I help? 👋",
     "Need support with ABA therapy?",
     "Ask me anything about services.",
-    "Want help in Spanish?",
     "I’m here when you need me.",
   ];
 
