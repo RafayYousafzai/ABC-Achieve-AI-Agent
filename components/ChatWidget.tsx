@@ -175,9 +175,10 @@ export default function ChatWidget() {
       type: "ellie-chat-widget",
       isOpen,
       isMessageEmpty,
+      showBubble,
     };
     window.parent.postMessage(payload, "*");
-  }, [isOpen, messages.length]);
+  }, [isOpen, messages.length, showBubble]);
 
   // Clear the uploading preview once the real message with the image
   // has appeared in the message list (not based on isUploading, which

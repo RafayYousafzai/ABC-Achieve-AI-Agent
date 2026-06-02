@@ -26,6 +26,7 @@
 
   // Desired state tracking
   let currentState = 'closed';
+  let showBubbleState = false;
 
   const STATES = {
     closed: {
@@ -58,6 +59,12 @@
 
     const activeContainer = document.getElementById('ellie-chat-container');
     const activeIframe = document.getElementById('ellie-chat-iframe');
+    const isMobile = window.innerWidth < 640;
+
+    let width = s.width;
+    if (currentState === 'closed' && showBubbleState) {
+      width = isMobile ? '100%' : '420px';
+    }
 
     // Apply strict styles to the container div
     if (activeContainer) {
@@ -77,11 +84,11 @@
         top: auto !important;
         left: auto !important;
         transform: none !important;
-        width: ${s.width} !important;
+        width: ${width} !important;
         height: ${s.height} !important;
-        min-width: ${s.width} !important;
+        min-width: ${width} !important;
         min-height: ${s.height} !important;
-        max-width: ${s.width} !important;
+        max-width: ${width} !important;
         max-height: ${s.height} !important;
         bottom: ${s.bottom} !important;
         right: ${s.right} !important;
@@ -207,9 +214,10 @@
 
     const isOpen = event.data.isOpen;
     const isMobile = window.innerWidth < 640;
+    showBubbleState = !!event.data.showBubble;
 
     if (!isOpen) {
-      console.log('%c[Ellie Chat]%c Transitioning to closed state (90x90)', 'color: #2563eb; font-weight: bold;', 'color: inherit;');
+      console.log('%c[Ellie Chat]%c Transitioning to closed state. showBubble: %s', 'color: #2563eb; font-weight: bold;', 'color: inherit;', showBubbleState);
       currentState = 'closed';
     } else {
       console.log('%c[Ellie Chat]%c Transitioning to open state. Mobile: %s', 'color: #2563eb; font-weight: bold;', 'color: inherit;', isMobile);
