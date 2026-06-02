@@ -25,11 +25,122 @@ export default function ChatWidget() {
 
   const [mounted, setMounted] = useState(false);
   const [isEmbedded, setIsEmbedded] = useState(false);
+  const [showBubble, setShowBubble] = useState(false);
+  const [bubbleText, setBubbleText] = useState("How can I help? 👋");
+  const hasAutoOpenedRef = useRef(false);
+  const introTimerRef = useRef<number | null>(null);
+  const bubbleTimerRef = useRef<number | null>(null);
+  const bubbleHideTimerRef = useRef<number | null>(null);
+  const bubbleMessages = [
+    "How can I help? 👋",
+    "Need support with ABA therapy?",
+    "Ask me anything about services.",
+    "Want help in Spanish?",
+    "I’m here when you need me.",
+  ];
+
+  const pickRandomBubbleMessage = () => {
+    const randomIndex = Math.floor(Math.random() * bubbleMessages.length);
+    return bubbleMessages[randomIndex];
+  };
+
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
       setIsEmbedded(window.self !== window.top);
+      setBubbleText("How can I help? 👋");
+      setShowBubble(true);
+      introTimerRef.current = window.setTimeout(() => {
+        hasAutoOpenedRef.current = true;
+        setIsOpen(true);
+        setShowBubble(false);
+      }, 1800);
     }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (introTimerRef.current) {
+        window.clearTimeout(introTimerRef.current);
+        introTimerRef.current = null;
+      }
+
+      if (bubbleTimerRef.current) {
+        window.clearTimeout(bubbleTimerRef.current);
+        bubbleTimerRef.current = null;
+      }
+
+      if (bubbleHideTimerRef.current) {
+        window.clearTimeout(bubbleHideTimerRef.current);
+        bubbleHideTimerRef.current = null;
+      }
+
+      setShowBubble(false);
+      return;
+    }
+
+    if (!hasAutoOpenedRef.current) {
+      return;
+    }
+
+    if (introTimerRef.current) {
+      window.clearTimeout(introTimerRef.current);
+      introTimerRef.current = null;
+    }
+
+    if (bubbleTimerRef.current) {
+      window.clearTimeout(bubbleTimerRef.current);
+      bubbleTimerRef.current = null;
+    }
+
+    if (bubbleHideTimerRef.current) {
+      window.clearTimeout(bubbleHideTimerRef.current);
+      bubbleHideTimerRef.current = null;
+    }
+
+    setShowBubble(true);
+    setBubbleText(pickRandomBubbleMessage());
+
+    const hideDelay = 3000 + Math.floor(Math.random() * 2000);
+    bubbleHideTimerRef.current = window.setTimeout(() => {
+      setShowBubble(false);
+    }, hideDelay);
+
+    const scheduleNextBubble = () => {
+      const delay = 30000 + Math.floor(Math.random() * 30000);
+      bubbleTimerRef.current = window.setTimeout(() => {
+        setBubbleText(pickRandomBubbleMessage());
+        setShowBubble(true);
+
+        if (bubbleHideTimerRef.current) {
+          window.clearTimeout(bubbleHideTimerRef.current);
+          bubbleHideTimerRef.current = null;
+        }
+
+        const nextHideDelay = 3000 + Math.floor(Math.random() * 2000);
+        bubbleHideTimerRef.current = window.setTimeout(() => {
+          setShowBubble(false);
+        }, nextHideDelay);
+
+        scheduleNextBubble();
+      }, delay);
+    };
+
+    scheduleNextBubble();
+  }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (introTimerRef.current) {
+        window.clearTimeout(introTimerRef.current);
+      }
+      if (bubbleTimerRef.current) {
+        window.clearTimeout(bubbleTimerRef.current);
+      }
+      if (bubbleHideTimerRef.current) {
+        window.clearTimeout(bubbleHideTimerRef.current);
+      }
+    };
   }, []);
 
   const [image, setImage] = useState<string | null>(null);
@@ -124,10 +235,12 @@ export default function ChatWidget() {
   // Memoized avatar
   const AiAvatar = () => (
     <div className="relative shrink-0">
-      <Avatar className="w-19 h-19 rounded-full border-2 border-white/20">
-        <Avatar.Image alt="AI Assistant" src={avatarSrc} />
-        <Avatar.Fallback>AI</Avatar.Fallback>
-      </Avatar>
+      <div className="rounded-full bg-[conic-gradient(from_135deg,#8b5cf6_0deg,#ec4899_72deg,#facc15_146deg,#22c55e_220deg,#06b6d4_292deg,#8b5cf6_360deg)] p-0.75 shadow-[0_10px_24px_rgba(0,0,0,0.18)]">
+        <Avatar className="w-19 h-19 rounded-full border-0 bg-white">
+          <Avatar.Image alt="AI Assistant" src={avatarSrc} />
+          <Avatar.Fallback>AI</Avatar.Fallback>
+        </Avatar>
+      </div>
       <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#22c55e] border-2 border-white rounded-full" />
     </div>
   );
@@ -142,7 +255,7 @@ export default function ChatWidget() {
     >
       {isOpen && (
         <Card
-          className={`w-[95vw] max-w-[420px] sm:w-[440px] md:w-[460px] ${isMessageEmpty ? "h-72" : "h-160"} p-0 rounded-3xl  shadow-2xl/10`}
+          className={`w-[95vw] max-w-105 sm:w-110 md:w-115 ${isMessageEmpty ? "h-72" : "h-160"} p-0 rounded-3xl  shadow-2xl/10`}
         >
           <ChatHeader
             title="Ellie"
@@ -230,12 +343,27 @@ export default function ChatWidget() {
 
       {/* Bubble Button */}
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="h-20 w-20 rounded-full cursor-pointer focus:outline-none flex items-center justify-center transition-transform hover:scale-105 active:scale-95 bg-transparent border-none p-0 outline-none"
-        >
-          <AiAvatar />
-        </button>
+        <div className="relative">
+          <div
+            className={`absolute right-full top-1/2 z-10 mr-4 -translate-y-1/2 transition-all duration-500 ease-out ${showBubble ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0"}`}
+            aria-hidden="true"
+          >
+            <div className="relative rounded-[22px] bg-white px-5 py-3 shadow-[0_18px_45px_rgba(0,0,0,0.16)] ring-1 ring-black/5">
+              <p className="whitespace-nowrap text-[18px] leading-none text-[#222]">
+                {bubbleText}
+              </p>
+              <span className="absolute -right-1.25 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-white ring-1 ring-black/5" />
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsOpen(true)}
+            className="group h-20 w-20 rounded-full cursor-pointer focus:outline-none flex items-center justify-center transition-transform hover:scale-105 active:scale-95 bg-transparent border-none p-0 outline-none"
+            aria-label="Open chat"
+          >
+            <AiAvatar />
+          </button>
+        </div>
       )}
     </div>
   );
