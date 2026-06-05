@@ -108,6 +108,19 @@ export function useChatWidget() {
     return sessionData?.hasSentFollowUp || false;
   });
 
+  // Pre-warm the serverless function on mount to eliminate cold start latency
+  useEffect(() => {
+    fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ping: true }),
+    }).catch((err) => {
+      console.warn("Failed to pre-warm the chat API:", err);
+    });
+  }, []);
+
   // Initialize Vercel AI SDK Chat
   const { messages, sendMessage, status, error, setMessages } = useChat({
     transport: new DefaultChatTransport({

@@ -7,7 +7,17 @@ export const runtime = "edge";
 
 export async function POST(req) {
   try {
-    const { messages, sessionId } = await req.json();
+    const body = await req.json();
+
+    // Warm-up/ping request to wake up the serverless function without calling AI APIs
+    if (body?.ping) {
+      return new Response(JSON.stringify({ ok: true, message: "pong" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const { messages, sessionId } = body;
 
     // Merge consecutive assistant messages to prevent Gemini API 400 errors due to consecutive model turns
     const mergedMessages = [];
