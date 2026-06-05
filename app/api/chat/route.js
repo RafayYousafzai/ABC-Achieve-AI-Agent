@@ -54,13 +54,66 @@ export async function POST(req) {
     
     const finalMessages = sanitizedMessages.length > 0 ? sanitizedMessages : mergedMessages;
 
+    // Inject file/image URLs into user message text context so Gemini can see the Supabase URLs
+    const messagesWithFileUrls = finalMessages.map(msg => {
+      if (msg.role !== "user") return msg;
+      
+      const urls = [];
+      
+      // Check experimental_attachments
+      if (msg.experimental_attachments && Array.isArray(msg.experimental_attachments)) {
+        msg.experimental_attachments.forEach(att => {
+          if (att.url) urls.push(att.url);
+        });
+      }
+      
+      // Check parts
+      if (msg.parts && Array.isArray(msg.parts)) {
+        msg.parts.forEach(part => {
+          if (part.url) urls.push(part.url);
+          else if (part.image && typeof part.image === "string" && part.image.startsWith("http")) urls.push(part.image);
+        });
+      }
+      
+      // Check files
+      if (msg.files && Array.isArray(msg.files)) {
+        msg.files.forEach(file => {
+          if (file.url) urls.push(file.url);
+        });
+      }
+      
+      if (urls.length > 0) {
+        const annotation = urls.map(url => `\n[Uploaded File URL: ${url}]`).join("");
+        const newMsg = {
+          ...msg,
+          content: (msg.content || "") + annotation
+        };
+        
+        // Ensure parts are updated as well since the SDK converts parts if they exist
+        if (newMsg.parts && Array.isArray(newMsg.parts)) {
+          newMsg.parts = newMsg.parts.map(p => ({ ...p }));
+          const textPart = newMsg.parts.find(p => p.type === "text");
+          if (textPart) {
+            textPart.text = (textPart.text || "") + annotation;
+          } else {
+            newMsg.parts.push({ type: "text", text: annotation });
+          }
+        }
+        
+        return newMsg;
+      }
+      
+      return msg;
+    });
+
     console.log("=== DEBUG API CHAT ===");
     console.log("Original Messages Count:", messages.length);
     console.log("Original Messages:", JSON.stringify(messages, null, 2));
     console.log("Merged Messages:", JSON.stringify(mergedMessages, null, 2));
     console.log("Final Messages (Sanitized):", JSON.stringify(finalMessages, null, 2));
+    console.log("Messages With File URLs:", JSON.stringify(messagesWithFileUrls, null, 2));
 
-    const modelMessages = await convertToModelMessages(finalMessages);
+    const modelMessages = await convertToModelMessages(messagesWithFileUrls);
     console.log("Model Messages:", JSON.stringify(modelMessages, null, 2));
 
     const result = streamText({
