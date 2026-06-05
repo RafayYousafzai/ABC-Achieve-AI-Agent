@@ -74,6 +74,33 @@ const getStoredSession = (): StoredSession | null => {
   }
 };
 
+const safeSliceMessages = (messages: any[], targetLimit: number): any[] => {
+  if (messages.length <= targetLimit) return messages;
+
+  // Start at the target slice point
+  let startIndex = messages.length - targetLimit;
+
+  // Search backward for the nearest 'user' message to start the conversation context cleanly
+  while (startIndex > 0 && messages[startIndex].role !== "user") {
+    startIndex--;
+  }
+
+  // If no user message is found moving backward, search forward from the target slice point
+  if (startIndex === 0 && messages[startIndex].role !== "user") {
+    startIndex = messages.length - targetLimit;
+    while (startIndex < messages.length && messages[startIndex].role !== "user") {
+      startIndex++;
+    }
+  }
+
+  // If we still didn't find a user message, fall back to the original slice behavior
+  if (startIndex >= messages.length) {
+    return messages.slice(-targetLimit);
+  }
+
+  return messages.slice(startIndex);
+};
+
 export function useChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -136,7 +163,7 @@ export function useChatWidget() {
     const session: StoredSession = {
       sessionId,
       expiresAt: Date.now() + ONE_HOUR,
-      messages: messages.slice(-20),
+      messages: safeSliceMessages(messages, 20),
       hasSentFollowUp,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));

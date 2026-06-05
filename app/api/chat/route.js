@@ -45,7 +45,23 @@ export async function POST(req) {
       }
     }
 
-    const modelMessages = await convertToModelMessages(mergedMessages);
+    // Ensure the message history starts with a user message for Gemini API compatibility.
+    // If it starts with an assistant or tool message, shift them off until we find a user message.
+    const sanitizedMessages = [...mergedMessages];
+    while (sanitizedMessages.length > 0 && sanitizedMessages[0].role !== "user") {
+      sanitizedMessages.shift();
+    }
+    
+    const finalMessages = sanitizedMessages.length > 0 ? sanitizedMessages : mergedMessages;
+
+    console.log("=== DEBUG API CHAT ===");
+    console.log("Original Messages Count:", messages.length);
+    console.log("Original Messages:", JSON.stringify(messages, null, 2));
+    console.log("Merged Messages:", JSON.stringify(mergedMessages, null, 2));
+    console.log("Final Messages (Sanitized):", JSON.stringify(finalMessages, null, 2));
+
+    const modelMessages = await convertToModelMessages(finalMessages);
+    console.log("Model Messages:", JSON.stringify(modelMessages, null, 2));
 
     const result = streamText({
       model: google("gemini-3.1-flash-lite"),
