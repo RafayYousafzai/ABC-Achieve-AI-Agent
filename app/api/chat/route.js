@@ -1,7 +1,8 @@
 import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
-import { ELLIE_SYSTEM_PROMPT } from "@/lib/agent/prompt";
+import { getSystemPrompt } from "@/lib/agent/prompt";
 import { getAgentTools } from "@/lib/agent/tools";
+import { supabase } from "@/lib/supabase";
 
 export const runtime = "edge";
 
@@ -18,6 +19,111 @@ export async function POST(req) {
     }
 
     const { messages, sessionId } = body;
+
+    // Check if intake is completed dynamically by querying the database and checking message history
+    let isCompleted = false;
+    if (sessionId) {
+      try {
+        let { data: lead, error: dbError } = await supabase
+          .from("leads")
+          .select("location, email, phone, insurance_provider, parent_name, child_name, updated_at")
+          .eq("session_id", sessionId)
+          .maybeSingle();
+
+        // Fallback in case updated_at column is missing in the database schema
+        if (dbError && dbError.message && dbError.message.includes("updated_at")) {
+          const retry = await supabase
+            .from("leads")
+            .select("location, email, phone, insurance_provider, parent_name, child_name")
+            .eq("session_id", sessionId)
+            .maybeSingle();
+          lead = retry.data;
+          dbError = retry.error;
+        }
+
+        if (dbError) {
+          console.error("Database query error:", dbError);
+        } else if (lead) {
+          // Check if all required fields are filled (not null, not undefined, and not empty strings)
+          const hasRequiredFields = !!(
+            lead.location?.trim() &&
+            lead.email?.trim() &&
+            lead.phone?.trim() &&
+            lead.insurance_provider?.trim() &&
+            lead.parent_name?.trim() &&
+            lead.child_name?.trim()
+          );
+
+          if (hasRequiredFields) {
+            // Check for 10 minutes of inactivity (600,000 ms)
+            let isInactive = false;
+            const TEN_MINUTES_MS = 10 * 60 * 1000;
+
+            // 1. Check database last update timestamp
+            if (lead.updated_at) {
+              const lastUpdate = new Date(lead.updated_at).getTime();
+              if (Date.now() - lastUpdate >= TEN_MINUTES_MS) {
+                isInactive = true;
+                console.log(`Locking session due to DB inactivity: ${Date.now() - lastUpdate}ms`);
+              }
+            }
+
+            // 2. Check message history timestamp (fallback/supplement)
+            if (!isInactive && messages.length >= 2) {
+              const prevMsg = messages[messages.length - 2];
+              if (prevMsg && prevMsg.createdAt) {
+                const prevTime = new Date(prevMsg.createdAt).getTime();
+                if (Date.now() - prevTime >= TEN_MINUTES_MS) {
+                  isInactive = true;
+                  console.log(`Locking session due to message history inactivity: ${Date.now() - prevTime}ms`);
+                }
+              }
+            }
+
+            // If the user has been inactive for 10 minutes after completing the required fields, lock it
+            if (isInactive) {
+              isCompleted = true;
+            }
+
+            // Also check if they finished the optional steps normally
+            if (!isCompleted) {
+              // Check if we have asked the last optional checklist question (goals) and the user has responded.
+              const hasAskedGoals = messages.some(msg => 
+                msg.role === "assistant" && 
+                (msg.content.toLowerCase().includes("goals") || msg.content.toLowerCase().includes("behavioral"))
+              );
+
+              if (hasAskedGoals) {
+                const lastGoalsIndex = messages.findLastIndex(msg =>
+                  msg.role === "assistant" &&
+                  (msg.content.toLowerCase().includes("goals") || msg.content.toLowerCase().includes("behavioral"))
+                );
+                // If there is any user message after the assistant asked about goals, they answered/skipped it.
+                const hasUserRespondedToGoals = messages.slice(lastGoalsIndex + 1).some(msg => msg.role === "user");
+                if (hasUserRespondedToGoals) {
+                  isCompleted = true;
+                }
+              }
+
+              // Also check if any final completion thank-you message exists in the assistant history
+              const hasCompletionMessage = messages.some(msg =>
+                msg.role === "assistant" &&
+                (msg.content.toLowerCase().includes("successfully received") || 
+                 msg.content.toLowerCase().includes("intake is complete") ||
+                 msg.content.toLowerCase().includes("thank you! we have everything") ||
+                 msg.content.toLowerCase().includes("intake process is complete"))
+              );
+              if (hasCompletionMessage) {
+                isCompleted = true;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error checking lead completion:", err);
+      }
+    }
+
 
     // Merge consecutive assistant messages to prevent Gemini API 400 errors due to consecutive model turns
     const mergedMessages = [];
@@ -116,12 +222,19 @@ export async function POST(req) {
     const modelMessages = await convertToModelMessages(messagesWithFileUrls);
     console.log("Model Messages:", JSON.stringify(modelMessages, null, 2));
 
+    const allTools = getAgentTools(sessionId);
+    const tools = { ...allTools };
+    if (isCompleted) {
+      delete tools.updateLeadProgress;
+      console.log("Intake is complete: updateLeadProgress tool removed from agent.");
+    }
+
     const result = streamText({
       model: google("gemini-3.1-flash-lite"),
       stopWhen: stepCountIs(10),
-      system: ELLIE_SYSTEM_PROMPT,
+      system: getSystemPrompt(isCompleted),
       messages: modelMessages,
-      tools: getAgentTools(sessionId),
+      tools,
     });
 
     return result.toUIMessageStreamResponse();

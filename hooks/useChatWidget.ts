@@ -55,7 +55,7 @@ interface StoredSession {
 }
 
 const SESSION_KEY = "ellie_chat_session";
-const ONE_HOUR = 60 * 60 * 1000;
+const TWO_HOURS = 2 * 60 * 60 * 1000;
 
 const getStoredSession = (): StoredSession | null => {
   if (typeof window === "undefined") return null;
@@ -118,7 +118,7 @@ export function useChatWidget() {
     const newSessionId = `sess_${randomPart}`;
     const newSession: StoredSession = {
       sessionId: newSessionId,
-      expiresAt: Date.now() + ONE_HOUR,
+      expiresAt: Date.now() + TWO_HOURS,
       messages: [],
       hasSentFollowUp: false,
     };
@@ -162,7 +162,7 @@ export function useChatWidget() {
     if (typeof window === "undefined" || !sessionId) return;
     const session: StoredSession = {
       sessionId,
-      expiresAt: Date.now() + ONE_HOUR,
+      expiresAt: Date.now() + TWO_HOURS,
       messages: safeSliceMessages(messages, 20),
       hasSentFollowUp,
     };
