@@ -270,5 +270,22 @@
     },
     true
   );
+
+  // GA4 tracking: forward "chat initiated" from the widget iframe to GTM on this page.
+  // Only the chat session ID is forwarded, never message content.
+  const ellieTrackedChats = {};
+  window.addEventListener("message", function (event) {
+    try {
+      if (event.origin !== allowedOrigin) return;
+      const d = event.data;
+      if (!d || d.type !== "ellie_chat_initiated") return;
+      const chatId = String(d.chat_session_id || "");
+      if (!chatId || ellieTrackedChats[chatId]) return;
+      ellieTrackedChats[chatId] = true;
+
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ event: "chat_initiated", chat_session_id: chatId });
+    } catch (e) {}
+  });
 })();
 

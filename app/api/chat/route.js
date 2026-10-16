@@ -212,15 +212,7 @@ export async function POST(req) {
       return msg;
     });
 
-    console.log("=== DEBUG API CHAT ===");
-    console.log("Original Messages Count:", messages.length);
-    console.log("Original Messages:", JSON.stringify(messages, null, 2));
-    console.log("Merged Messages:", JSON.stringify(mergedMessages, null, 2));
-    console.log("Final Messages (Sanitized):", JSON.stringify(finalMessages, null, 2));
-    console.log("Messages With File URLs:", JSON.stringify(messagesWithFileUrls, null, 2));
-
     const modelMessages = await convertToModelMessages(messagesWithFileUrls);
-    console.log("Model Messages:", JSON.stringify(modelMessages, null, 2));
 
     const allTools = getAgentTools(sessionId);
     const tools = { ...allTools };

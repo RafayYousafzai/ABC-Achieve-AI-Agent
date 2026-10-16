@@ -52,7 +52,20 @@ interface StoredSession {
   expiresAt: number;
   messages: any[];
   hasSentFollowUp?: boolean;
+  hasTrackedChatStart?: boolean;
 }
+
+// Tell the host page (embed.js) that the parent sent their first message, so it can
+// push a `chat_initiated` event to GTM/GA4. Only the session ID is sent, never chat content.
+const notifyChatInitiated = (sessionId: string) => {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "ellie_chat_initiated", chat_session_id: sessionId }, "*");
+    }
+  } catch {
+    // Tracking must never break the chat
+  }
+};
 
 const SESSION_KEY = "ellie_chat_session";
 const TWO_HOURS = 2 * 60 * 60 * 1000;
@@ -135,6 +148,14 @@ export function useChatWidget() {
     return sessionData?.hasSentFollowUp || false;
   });
 
+  // Sessions saved before this flag existed count as tracked if the parent already wrote something
+  const [hasTrackedChatStart, setHasTrackedChatStart] = useState(() => {
+    return (
+      sessionData?.hasTrackedChatStart ??
+      (sessionData?.messages || []).some((m) => m.role === "user")
+    );
+  });
+
   // Pre-warm the serverless function on mount to eliminate cold start latency
   useEffect(() => {
     fetch("/api/chat", {
@@ -165,9 +186,10 @@ export function useChatWidget() {
       expiresAt: Date.now() + TWO_HOURS,
       messages: safeSliceMessages(messages, 20),
       hasSentFollowUp,
+      hasTrackedChatStart,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  }, [messages, sessionId, hasSentFollowUp]);
+  }, [messages, sessionId, hasSentFollowUp, hasTrackedChatStart]);
 
   // Automated inactivity check (45 seconds of silence after the last assistant response)
   useEffect(() => {
@@ -219,6 +241,11 @@ export function useChatWidget() {
         }
       }
 
+      if (!hasTrackedChatStart && (finalMessageText || uploadedUrl)) {
+        notifyChatInitiated(sessionId);
+        setHasTrackedChatStart(true);
+      }
+
       if (uploadedUrl && selectedFile) {
         const filePart = {
           type: "file" as const,
@@ -238,7 +265,7 @@ export function useChatWidget() {
 
       setInput("");
     },
-    [sendMessage, sessionId]
+    [sendMessage, sessionId, hasTrackedChatStart]
   );
 
   // Unified submit handler updated to accept a File object
